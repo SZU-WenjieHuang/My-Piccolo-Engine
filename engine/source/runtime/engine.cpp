@@ -21,7 +21,7 @@ namespace Piccolo
     {
         Reflection::TypeMetaRegister::metaRegister();
 
-        g_runtime_global_context.startSystems(config_file_path);
+        g_runtime_global_context.startSystems(config_file_path);             //重点是开启 runtime_global_context的System
 
         LOG_INFO("engine start");
     }
@@ -30,7 +30,7 @@ namespace Piccolo
     {
         LOG_INFO("engine shutdown");
 
-        g_runtime_global_context.shutdownSystems();
+        g_runtime_global_context.shutdownSystems();                          //关闭 runtime_global_context的System
 
         Reflection::TypeMetaRegister::metaUnregister();
     }
@@ -65,6 +65,7 @@ namespace Piccolo
         return delta_time;
     }
 
+    // 重点 每一帧的 logiclTick 和 RenderTick
     bool PiccoloEngine::tickOneFrame(float delta_time)
     {
         logicalTick(delta_time);
