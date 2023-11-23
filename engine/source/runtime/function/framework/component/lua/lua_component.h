@@ -4,6 +4,7 @@
 
 namespace Piccolo
 {
+    // 需要Piccolo_parser生成反射代码和序列化相关的代码
     REFLECTION_TYPE(LuaComponent)
     CLASS(LuaComponent : public Component, WhiteListFields)
     {
@@ -12,6 +13,7 @@ namespace Piccolo
     public:
         LuaComponent() = default;
 
+        // 序列化的时候需要的一个函数
         void postLoadResource(std::weak_ptr<GObject> parent_object) override;
 
         void tick(float delta_time) override;
@@ -25,7 +27,7 @@ namespace Piccolo
         static void invoke(std::weak_ptr<GObject> game_object, const char* name);
     protected:
         sol::state m_lua_state;
-        META(Enable)
-        std::string m_lua_script;
+        META(Enable)                // 提醒Piccolo_parser序列化该字段
+        std::string m_lua_script;   // Lua脚本
     };
 } // namespace Piccolo

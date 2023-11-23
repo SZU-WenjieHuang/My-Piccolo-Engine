@@ -23,6 +23,10 @@ namespace Piccolo
 {
     RuntimeGlobalContext g_runtime_global_context;
 
+    // 这里用了单例模式,
+    // 用shared_ptr提供了全局唯一入口
+    // 用shared_ptr不用unique_ptr主要是为了方便多个组件间共享，也避免了内存管理
+
     void RuntimeGlobalContext::startSystems(const std::string& config_file_path)
     {
         m_config_manager = std::make_shared<ConfigManager>();
