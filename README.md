@@ -240,3 +240,32 @@ RHI在游戏引擎中的作用是:
 ### 16 Color Grading
 Color Grading在渲染管线中主要用来对渲染结果进行着色处理。</br>
 我的理解是，Color Grading把原本一个色彩空间的颜色给转变到另一个已有的色彩空间里。</br>
+
+### 17 重新编译命令
+cmake -B build
+
+### 18 Shader的处理以及绑定流程
+所有的glsl Shader，都会在windows用Visul Studio编译的过程中生成对应的.h文件以及编译之后的spv文件，存储在 engine/shader/generated文件夹下;
+
+### 19 撕裂的条纹的bug，是因为mipmap
+
+在render_resource.cpp中修改:  传入一个color_grading 的mipmap level = 1; 就不会给它生成mipmap了。
+why？
+
+难道是默认=0是生成全部，然后=1是只生成最高精度那层？
+
+```cpp
+        // create color grading texture
+        rhi->createGlobalImage(
+            m_global_render_resource._color_grading_resource._color_grading_LUT_texture_image,
+            m_global_render_resource._color_grading_resource._color_grading_LUT_texture_image_view,
+            m_global_render_resource._color_grading_resource._color_grading_LUT_texture_image_allocation,
+            color_grading_map->m_width,
+            color_grading_map->m_height,
+            color_grading_map->m_pixels,
+            color_grading_map->m_format, 1);
+```
+
+
+
+
