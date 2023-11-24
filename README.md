@@ -167,6 +167,9 @@ CMakeLists.txt描述了项目各模块的构建信息和规则,其中包含目�
 
 ### 12 反射系统的目的
 
+此处可以参见课程的笔记:
+https://github.com/SZU-WenjieHuang/Markdown-note/blob/main/Games104/14-%E5%BC%95%E6%93%8E%E5%B7%A5%E5%85%B7%E9%93%BE%E9%AB%98%E7%BA%A7%E6%A6%82%E5%BF%B5.md
+
 1-动态创建对象实例:</br>
 通过类名称或类型信息动态地创建对象,而不需要预先给定具体类。
 
@@ -184,3 +187,56 @@ CMakeLists.txt描述了项目各模块的构建信息和规则,其中包含目�
 
 6-编辑器自定义组件:</br>
 允许通过JSON等定义组件,根据定义构建相应类或对象实例。
+
+### 13 VScode检索函数调用小技巧
+按住shift+F12, 就可以在VScode里检索到所有调用该函数的地方。当然要是键盘上的F12被一些比如计算器之类的快捷功能占领，则需要多按一下Fn才行。
+
+
+### 14 渲染系统
+
+小引擎的渲染系统叫render system; 在source/runtime/function/render 文件夹下有 render_system.h 和 render_system.cpp; 是渲染系统的入口。</br>
+
+render system在全局的Global_context.cpp里被初始化，然后在engine.cpp里被每一帧都tick()一次。最后在 Global_context.cpp里的shutdownSystems()函数里被clear()。</br>
+
+在renderSystem.cpp内有初始化了Camera，Scene，Resources， renderPipeline等Class；
+
+在我们的 render_pipeline.cpp里面，包括了forward Render和deffered Render两个内容。然后还有初始定义的10种Pass:
+
+1-PointLightShadowPass</br>
+2-DirectionalLightShadowPass</br>
+3-MainCameraPass</br>
+4-ToneMappingPass</br>
+5-ColorGradingPass</br>
+6-UIPass</br>
+7-CombineUIPass</br>
+8-PickPass</br>
+9-FXAAPass</br>
+10-ParticlePass</br>
+
+在Tick()函数的入口处就是一个processSwapData()函数，用的是“双缓冲”(double buffering)模式，用来做渲染数据的交换，包括level_resource, game_object_resource,camera_swap_data等对象信息。剩下的步骤可以看代码。</br>
+
+总结一下渲染的步骤就是:
+在renderSystem内的tick() 是整个渲染的入口，首先渲染会从逻辑获取数据，然后准备一堆前置数据之后，开始走Vulkan管线渲染。走到 render_pipeline.cpp里实现forward_rendering和deffered_rendering, 然后又在main_camera_pass.cpp内具体地去draw每一个Pass。这又回到了熟悉的Vulkan，VulkanYYDS。</br>
+
+以上就是渲染系统的框架。
+
+
+### 15 RHI
+RHI是渲染硬件接口(Render Hardware Interface)的缩写。
+
+RHI在游戏引擎中的作用是:
+1-它隐藏了底层图形API(如DirectX、OpenGL等)的具体实现细节。
+2-提供一个渲染抽象层,标准化各个图形API框架下的开发流程。
+3-使渲染系统与具体的硬件平台解偶并支持多平台。
+
+具体来说,RHI主要 responsibility有:
+1-定义图形资源的抽象类型,如纹理、Shader等。
+2-定义渲染命令列表和绘图调用接口。
+3-管理显存,加载/释放资源。
+4-提供采样器状态等辅助功能。
+5-封装窗口/设备创建等基础功能。
+6-同步渲染线程和游戏逻辑。
+
+### 16 Color Grading
+Color Grading在渲染管线中主要用来对渲染结果进行着色处理。</br>
+我的理解是，Color Grading把原本一个色彩空间的颜色给转变到另一个已有的色彩空间里。</br>

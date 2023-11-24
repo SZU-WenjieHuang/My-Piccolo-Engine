@@ -113,6 +113,7 @@ namespace Piccolo
 
     }
 
+    // Familiar Vulkan!!! 
     void RenderPipeline::forwardRender(std::shared_ptr<RHI> rhi, std::shared_ptr<RenderResourceBase> render_resource)
     {
         VulkanRHI*      vulkan_rhi      = static_cast<VulkanRHI*>(rhi.get());
@@ -135,6 +136,7 @@ namespace Piccolo
 
         static_cast<PointLightShadowPass*>(m_point_light_shadow_pass.get())->draw();
 
+        // contain several render pass
         ColorGradingPass& color_grading_pass = *(static_cast<ColorGradingPass*>(m_color_grading_pass.get()));
         FXAAPass&         fxaa_pass          = *(static_cast<FXAAPass*>(m_fxaa_pass.get()));
         ToneMappingPass&  tone_mapping_pass  = *(static_cast<ToneMappingPass*>(m_tone_mapping_pass.get()));

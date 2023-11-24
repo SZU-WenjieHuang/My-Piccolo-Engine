@@ -2011,6 +2011,7 @@ namespace Piccolo
         m_rhi->cmdEndRenderPassPFN(m_rhi->getCurrentCommandBuffer());
     }
 
+    // this will draw subpass one by one
     void MainCameraPass::drawForward(ColorGradingPass& color_grading_pass,
                                      FXAAPass&         fxaa_pass,
                                      ToneMappingPass&  tone_mapping_pass,
@@ -2100,6 +2101,7 @@ namespace Piccolo
         m_rhi->cmdEndRenderPassPFN(m_rhi->getCurrentCommandBuffer());
     }
 
+    // G-Buffer of Deffered Rendering
     void MainCameraPass::drawMeshGbuffer()
     {
         struct MeshNode
@@ -2329,6 +2331,7 @@ namespace Piccolo
         m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
     }
 
+    // Deffered Lighting
     void MainCameraPass::drawDeferredLighting()
     {
         m_rhi->cmdBindPipelinePFN(m_rhi->getCurrentCommandBuffer(),

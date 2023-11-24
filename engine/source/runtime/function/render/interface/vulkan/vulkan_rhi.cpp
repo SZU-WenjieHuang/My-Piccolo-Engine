@@ -627,7 +627,7 @@ namespace Piccolo
             LOG_ERROR("validation layers requested, but not available!");
         }
 
-        m_vulkan_api_version = VK_API_VERSION_1_0;
+        m_vulkan_api_version = VK_API_VERSION_1_1;  // change here
 
         // app info
         VkApplicationInfo appInfo {};

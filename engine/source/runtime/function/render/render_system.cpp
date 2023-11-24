@@ -109,19 +109,20 @@ namespace Piccolo
         m_render_scene->updateVisibleObjects(std::static_pointer_cast<RenderResource>(m_render_resource),
                                              m_render_camera);
 
-        // prepare pipeline's render passes data
+        // prepare pipeline's render passes data for each pass
         m_render_pipeline->preparePassData(m_render_resource);
 
         g_runtime_global_context.m_debugdraw_manager->tick(delta_time);
 
         // render one frame
+        // Foreard or Deffered
         if (m_render_pipeline_type == RENDER_PIPELINE_TYPE::FORWARD_PIPELINE)
         {
-            m_render_pipeline->forwardRender(m_rhi, m_render_resource);
+            m_render_pipeline->forwardRender(m_rhi, m_render_resource);                                // forward
         }
         else if (m_render_pipeline_type == RENDER_PIPELINE_TYPE::DEFERRED_PIPELINE)
         {
-            m_render_pipeline->deferredRender(m_rhi, m_render_resource);
+            m_render_pipeline->deferredRender(m_rhi, m_render_resource);                               // deffered
         }
         else
         {
