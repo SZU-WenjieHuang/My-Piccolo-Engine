@@ -20,7 +20,7 @@ void main()
     // texture(color_grading_lut_texture_sampler, uv)
     // out_color = color;
 
-    highp float b = color * _COLORS;
+    highp float b = color.b * _COLORS;
     highp float b_floor = floor(b);
     highp float b_ceil = ceil(b);
     highp vec4 color_floor = texture(color_grading_lut_texture_sampler, vec2((b_floor + color.r) / _COLORS, color.g));
