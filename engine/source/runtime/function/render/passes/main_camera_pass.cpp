@@ -351,6 +351,7 @@ namespace Piccolo
         }
         color_grading_pass_color_attachment_reference.layout = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+        // Add Color_grading subpass
         RHISubpassDescription& color_grading_pass   = subpasses[_main_camera_subpass_color_grading];
         color_grading_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
         color_grading_pass.inputAttachmentCount    = 1;

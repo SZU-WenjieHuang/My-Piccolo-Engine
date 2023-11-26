@@ -29,6 +29,8 @@ namespace Piccolo
         _main_camera_pass_attachment_count              = 9,
     };
 
+    // All subPass of main_camera_pass
+    // A renderpass can include multiple serial subpasses
     enum
     {
         _main_camera_subpass_basepass = 0,
@@ -83,7 +85,8 @@ namespace Piccolo
             RHIPipeline*       pipeline;
         };
 
-        GlobalRenderResource*      m_global_render_resource {nullptr};
+        
+        GlobalRenderResource*      m_global_render_resource {nullptr};   // 记录了可能有用的全局资源
 
         std::vector<Descriptor>         m_descriptor_infos;
         std::vector<RenderPipelineBase> m_render_pipelines;
