@@ -14,6 +14,7 @@ namespace Piccolo
         m_particle_pass->preparePassData(render_resource);
         g_runtime_global_context.m_debugdraw_manager->preparePassData(render_resource);
     }
+    // 以下两个为纯虚函数，需要在render_pipeline.cpp内实现
     void RenderPipelineBase::forwardRender(std::shared_ptr<RHI>                rhi,
                                            std::shared_ptr<RenderResourceBase> render_resource)
     {}

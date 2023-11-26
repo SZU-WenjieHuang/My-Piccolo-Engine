@@ -19,6 +19,7 @@ namespace Piccolo
 {
     void RenderPipeline::initialize(RenderPipelineInitInfo init_info)
     {
+        // 初始化会用到的pass/subpass
         m_point_light_shadow_pass = std::make_shared<PointLightShadowPass>();
         m_directional_light_pass  = std::make_shared<DirectionalLightShadowPass>();
         m_main_camera_pass        = std::make_shared<MainCameraPass>();
@@ -30,10 +31,12 @@ namespace Piccolo
         m_fxaa_pass               = std::make_shared<FXAAPass>();
         m_particle_pass           = std::make_shared<ParticlePass>();
 
+        // RenderPassCommonInfo 包含rhi和rendersource的信息，在render_pass_base.cpp内定义
         RenderPassCommonInfo pass_common_info;
         pass_common_info.rhi             = m_rhi;
         pass_common_info.render_resource = init_info.render_resource;
 
+        // 将rhi和renderResource信息传给各个Pass
         m_point_light_shadow_pass->setCommonInfo(pass_common_info);
         m_directional_light_pass->setCommonInfo(pass_common_info);
         m_main_camera_pass->setCommonInfo(pass_common_info);
@@ -45,11 +48,13 @@ namespace Piccolo
         m_fxaa_pass->setCommonInfo(pass_common_info);
         m_particle_pass->setCommonInfo(pass_common_info);
 
+        // 计算ShadowMap的两个pass初始化
         m_point_light_shadow_pass->initialize(nullptr);
         m_directional_light_pass->initialize(nullptr);
 
+        // 静态转型
         std::shared_ptr<MainCameraPass> main_camera_pass = std::static_pointer_cast<MainCameraPass>(m_main_camera_pass);
-        std::shared_ptr<RenderPass>     _main_camera_pass = std::static_pointer_cast<RenderPass>(m_main_camera_pass);
+        std::shared_ptr<RenderPass>     _main_camera_pass = std::static_pointer_cast<RenderPass>(m_main_camera_pass); // 为了可以调用基类RenderPass的函数
         std::shared_ptr<ParticlePass> particle_pass = std::static_pointer_cast<ParticlePass>(m_particle_pass);
 
         ParticlePassInitInfo particle_init_info{};
