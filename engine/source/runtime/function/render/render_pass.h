@@ -15,6 +15,7 @@ namespace Piccolo
 
     enum
     {
+        // attachments
         _main_camera_pass_gbuffer_a                     = 0,
         _main_camera_pass_gbuffer_b                     = 1,
         _main_camera_pass_gbuffer_c                     = 2,
@@ -24,6 +25,7 @@ namespace Piccolo
         _main_camera_pass_post_process_buffer_even      = 6,
         _main_camera_pass_depth                         = 7,
         _main_camera_pass_swap_chain_image              = 8,
+        // attachment count
         _main_camera_pass_custom_attachment_count       = 5,
         _main_camera_pass_post_process_attachment_count = 2,
         _main_camera_pass_attachment_count              = 9,
@@ -31,6 +33,7 @@ namespace Piccolo
 
     // All subPass of main_camera_pass
     // A renderpass can include multiple serial subpasses
+    // 枚举了subpass
     enum
     {
         _main_camera_subpass_basepass = 0,
@@ -44,14 +47,17 @@ namespace Piccolo
         _main_camera_subpass_count
     };
 
+    // 用Nodes表示可见场景
     struct VisiableNodes
     {
-        std::vector<RenderMeshNode>*              p_directional_light_visible_mesh_nodes {nullptr};
-        std::vector<RenderMeshNode>*              p_point_lights_visible_mesh_nodes {nullptr};
-        std::vector<RenderMeshNode>*              p_main_camera_visible_mesh_nodes {nullptr};
-        RenderAxisNode*                           p_axis_node {nullptr};
+        std::vector<RenderMeshNode>*              p_directional_light_visible_mesh_nodes {nullptr};   // directional_light 可见
+        std::vector<RenderMeshNode>*              p_point_lights_visible_mesh_nodes {nullptr};        // point_lights 可见
+        std::vector<RenderMeshNode>*              p_main_camera_visible_mesh_nodes {nullptr};         // main camera 可见
+        RenderAxisNode*                           p_axis_node {nullptr};                              // 坐标轴节点
     };
 
+    // 定义RenderPass的模板，对Vulkan的相关对象和概念进行了再包装
+    // 为RenderPass提供了通用的基类支持
     class RenderPass : public RenderPassBase
     {
     public:

@@ -9,6 +9,7 @@ Piccolo::VisiableNodes Piccolo::RenderPass::m_visiable_nodes;
 
 namespace Piccolo
 {
+    // initialize 
     void RenderPass::initialize(const RenderPassInitInfo* init_info)
     {
         m_global_render_resource =
@@ -18,8 +19,10 @@ namespace Piccolo
 
     void RenderPass::postInitialize() {}
 
+    // get RenderPass
     RHIRenderPass* RenderPass::getRenderPass() const { return m_framebuffer.render_pass; }
 
+    // get ImageView
     std::vector<RHIImageView*> RenderPass::getFramebufferImageViews() const
     {
         std::vector<RHIImageView*> image_views;
@@ -30,6 +33,7 @@ namespace Piccolo
         return image_views;
     }
 
+    // get DescriptorSetLayouts
     std::vector<RHIDescriptorSetLayout*> RenderPass::getDescriptorSetLayouts() const
     {
         std::vector<RHIDescriptorSetLayout*> layouts;
