@@ -266,6 +266,48 @@ why？
             color_grading_map->m_format, 1);
 ```
 
+### 20 Vulkan Subpass 架构
+在Main Camera Pass里定义了很多的subPass；
 
+### 21 关于解引用，引用，取址，指针
+
+```cpp
+int main() {
+
+int num = 10;
+
+// 取址(&):获取变量num的内存地址
+int* pNum = &num;
+
+// 解引用(*):根据指针pNum的值取得它指向的变量
+int val = *pNum;
+
+// 引用(&):新变量numRef直接引用已有变量num
+int& numRef = num;
+
+// 操作
+num = 20;
+cout << num << endl;       // 20
+cout << val << endl;       // 10
+cout << numRef << endl;    // 20
+
+// 指针操作
+*pNum = 30;
+cout << num << endl;       // 30
+cout << val << endl;       // 10
+cout << numRef << endl;    // 30
+
+// 引用操作
+numRef = 40;
+cout << num << endl;       // 40
+cout << val << endl;       // 10
+cout << numRef << endl;    // 40
+
+return 0;
+}
+```
+注意在这里，初始化 对象& 需要用一个对象，而不是用地址;
+
+### 22 理解double buffering里的 odd 和 even的使用
 
 

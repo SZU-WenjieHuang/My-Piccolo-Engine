@@ -17,6 +17,7 @@
 
 namespace Piccolo
 {
+    // 在render_system内调用
     void RenderPipeline::initialize(RenderPipelineInitInfo init_info)
     {
         // 初始化会用到的pass/subpass
@@ -54,18 +55,21 @@ namespace Piccolo
 
         // 静态转型
         std::shared_ptr<MainCameraPass> main_camera_pass = std::static_pointer_cast<MainCameraPass>(m_main_camera_pass);
-        std::shared_ptr<RenderPass>     _main_camera_pass = std::static_pointer_cast<RenderPass>(m_main_camera_pass); // 为了可以调用基类RenderPass的函数
+        std::shared_ptr<RenderPass>     _main_camera_pass = std::static_pointer_cast<RenderPass>(m_main_camera_pass); // 为了可以调用基类RenderPass的函数，用来get它的其他subpass
         std::shared_ptr<ParticlePass> particle_pass = std::static_pointer_cast<ParticlePass>(m_particle_pass);
 
+        // 初始化Particle Pass
         ParticlePassInitInfo particle_init_info{};
         particle_init_info.m_particle_manager = g_runtime_global_context.m_particle_manager;
         m_particle_pass->initialize(&particle_init_info);
 
+        // 初始化Shadow Mapping Pass的 Image View
         main_camera_pass->m_point_light_shadow_color_image_view =
             std::static_pointer_cast<RenderPass>(m_point_light_shadow_pass)->getFramebufferImageViews()[0];
         main_camera_pass->m_directional_light_shadow_color_image_view =
             std::static_pointer_cast<RenderPass>(m_directional_light_pass)->m_framebuffer.attachments[0].view;
 
+        // 为main_camera 设置fxaa和Particle
         MainCameraPassInitInfo main_camera_init_info;
         main_camera_init_info.enble_fxaa = init_info.enable_fxaa;
         main_camera_pass->setParticlePass(particle_pass);
@@ -73,6 +77,7 @@ namespace Piccolo
 
         std::static_pointer_cast<ParticlePass>(m_particle_pass)->setupParticlePass();
 
+        // 设置Shadow Mapping Pass的descriptor_layouts,并初始化
         std::vector<RHIDescriptorSetLayout*> descriptor_layouts = _main_camera_pass->getDescriptorSetLayouts();
         std::static_pointer_cast<PointLightShadowPass>(m_point_light_shadow_pass)
             ->setPerMeshLayout(descriptor_layouts[MainCameraPass::LayoutType::_per_mesh]);
@@ -82,22 +87,26 @@ namespace Piccolo
         m_point_light_shadow_pass->postInitialize();
         m_directional_light_pass->postInitialize();
 
+        // 初始化ToneMappingPass
         ToneMappingPassInitInfo tone_mapping_init_info;
         tone_mapping_init_info.render_pass = _main_camera_pass->getRenderPass();
         tone_mapping_init_info.input_attachment =
             _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd];
         m_tone_mapping_pass->initialize(&tone_mapping_init_info);
 
+        // 初始化ColorGradingPass
         ColorGradingPassInitInfo color_grading_init_info;
         color_grading_init_info.render_pass = _main_camera_pass->getRenderPass();
         color_grading_init_info.input_attachment =
             _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_even];
         m_color_grading_pass->initialize(&color_grading_init_info);
 
+        // 初始化UIPass
         UIPassInitInfo ui_init_info;
         ui_init_info.render_pass = _main_camera_pass->getRenderPass();
         m_ui_pass->initialize(&ui_init_info);
 
+        // 初始化CombineUIPass
         CombineUIPassInitInfo combine_ui_init_info;
         combine_ui_init_info.render_pass = _main_camera_pass->getRenderPass();
         combine_ui_init_info.scene_input_attachment =
@@ -106,10 +115,12 @@ namespace Piccolo
             _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_even];
         m_combine_ui_pass->initialize(&combine_ui_init_info);
 
+        // 初始化PickPass
         PickPassInitInfo pick_init_info;
         pick_init_info.per_mesh_layout = descriptor_layouts[MainCameraPass::LayoutType::_per_mesh];
         m_pick_pass->initialize(&pick_init_info);
 
+        // 初始化FXAAPass
         FXAAPassInitInfo fxaa_init_info;
         fxaa_init_info.render_pass = _main_camera_pass->getRenderPass();
         fxaa_init_info.input_attachment =
@@ -137,11 +148,13 @@ namespace Piccolo
             return;
         }
 
+        // draw shadowmap pass
         static_cast<DirectionalLightShadowPass*>(m_directional_light_pass.get())->draw();
-
         static_cast<PointLightShadowPass*>(m_point_light_shadow_pass.get())->draw();
 
-        // contain several render pass
+        // contain several sub pass
+        // get 返回的是subpass的指针, 通过static_cast 和解引用得到对象来初始化该subpass的引用
+        // 这里需要使用static_cast还有点疑问
         ColorGradingPass& color_grading_pass = *(static_cast<ColorGradingPass*>(m_color_grading_pass.get()));
         FXAAPass&         fxaa_pass          = *(static_cast<FXAAPass*>(m_fxaa_pass.get()));
         ToneMappingPass&  tone_mapping_pass  = *(static_cast<ToneMappingPass*>(m_tone_mapping_pass.get()));
@@ -170,6 +183,7 @@ namespace Piccolo
         static_cast<ParticlePass*>(m_particle_pass.get())->simulate();
     }
 
+    // 和forward是相似的 具体的区分在pass的内部logic
     void RenderPipeline::deferredRender(std::shared_ptr<RHI> rhi, std::shared_ptr<RenderResourceBase> render_resource)
     {
         VulkanRHI*      vulkan_rhi      = static_cast<VulkanRHI*>(rhi.get());
@@ -189,7 +203,6 @@ namespace Piccolo
         }
 
         static_cast<DirectionalLightShadowPass*>(m_directional_light_pass.get())->draw();
-
         static_cast<PointLightShadowPass*>(m_point_light_shadow_pass.get())->draw();
 
         ColorGradingPass& color_grading_pass = *(static_cast<ColorGradingPass*>(m_color_grading_pass.get()));
@@ -219,6 +232,9 @@ namespace Piccolo
         static_cast<ParticlePass*>(m_particle_pass.get())->simulate();
     }
 
+
+    // 有odd和even两套framebuffer
+    // 有待解决 怎么判断该用哪个buffer odd还是even
     void RenderPipeline::passUpdateAfterRecreateSwapchain()
     {
         MainCameraPass&   main_camera_pass   = *(static_cast<MainCameraPass*>(m_main_camera_pass.get()));
@@ -229,13 +245,11 @@ namespace Piccolo
         PickPass&         pick_pass          = *(static_cast<PickPass*>(m_pick_pass.get()));
         ParticlePass&     particle_pass      = *(static_cast<ParticlePass*>(m_particle_pass.get()));
 
+        // main_camera_pass 先更新
         main_camera_pass.updateAfterFramebufferRecreate();
-        tone_mapping_pass.updateAfterFramebufferRecreate(
-            main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd]);
-        color_grading_pass.updateAfterFramebufferRecreate(
-            main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even]);
-        fxaa_pass.updateAfterFramebufferRecreate(
-            main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd]);
+        tone_mapping_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd]);
+        color_grading_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even]);
+        fxaa_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd]);
         combine_ui_pass.updateAfterFramebufferRecreate(
             main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd],
             main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even]);
@@ -243,18 +257,22 @@ namespace Piccolo
         particle_pass.updateAfterFramebufferRecreate();
         g_runtime_global_context.m_debugdraw_manager->updateAfterRecreateSwapchain();
     }
+
+    // 通过UV坐标获得选中物体的id
     uint32_t RenderPipeline::getGuidOfPickedMesh(const Vector2& picked_uv)
     {
         PickPass& pick_pass = *(static_cast<PickPass*>(m_pick_pass.get()));
         return pick_pass.pick(picked_uv);
     }
 
+    // 设置是否显示坐标轴
     void RenderPipeline::setAxisVisibleState(bool state)
     {
         MainCameraPass& main_camera_pass = *(static_cast<MainCameraPass*>(m_main_camera_pass.get()));
         main_camera_pass.m_is_show_axis  = state;
     }
 
+    // 设置selected_axis
     void RenderPipeline::setSelectedAxis(size_t selected_axis)
     {
         MainCameraPass& main_camera_pass = *(static_cast<MainCameraPass*>(m_main_camera_pass.get()));
