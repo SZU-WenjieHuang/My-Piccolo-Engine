@@ -1226,8 +1226,8 @@ namespace Piccolo
 
     enum RHIPipelineBindPoint : int
     {
-        RHI_PIPELINE_BIND_POINT_GRAPHICS = 0,
-        RHI_PIPELINE_BIND_POINT_COMPUTE = 1,
+        RHI_PIPELINE_BIND_POINT_GRAPHICS = 0,                                             // VK_PIPELINE_BIND_POINT_GRAPHICS
+        RHI_PIPELINE_BIND_POINT_COMPUTE = 1,                                              // VK_PIPELINE_BIND_POINT_COMPUTE
         RHI_PIPELINE_BIND_POINT_RAY_TRACING_KHR = 1000165000,
         RHI_PIPELINE_BIND_POINT_SUBPASS_SHADING_HUAWEI = 1000369003,
         RHI_PIPELINE_BIND_POINT_RAY_TRACING_NV = RHI_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
@@ -1412,6 +1412,8 @@ namespace Piccolo
         RHI_BLEND_FACTOR_MAX_ENUM = 0x7FFFFFFF
     };
 
+    // 创建VkImageView就是指定VkImage哪个Aspect要被访问，这个image_aspect_flags就是做这个操作的
+    // eg: Color, Depth, Stencil... ...
     enum RHIImageAspectFlagBits {
         RHI_IMAGE_ASPECT_COLOR_BIT = 0x00000001,
         RHI_IMAGE_ASPECT_DEPTH_BIT = 0x00000002,

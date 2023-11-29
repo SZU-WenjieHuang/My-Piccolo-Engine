@@ -421,3 +421,151 @@ namespace Piccolo
 } // namespace Piccolo
 
 ```
+
+### 27 图像布局image tilling
+```cpp
+    enum RHIImageTiling : int
+    {
+        RHI_IMAGE_TILING_OPTIMAL = 0,
+        RHI_IMAGE_TILING_LINEAR = 1,
+        RHI_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT = 1000158000,
+        RHI_IMAGE_TILING_MAX_ENUM = 0x7FFFFFFF
+    };
+```
+
+1-最优布局方式 (RHI_IMAGE_TILING_OPTIMAL)：</br>
+当图像用于渲染操作（如颜色附件、深度附件等）时，通常选择最优布局方式。这种布局方式对 GPU 访问进行了优化，提供了最佳的性能和效率。
+当需要对图像进行采样操作（如纹理采样）时，最优布局方式通常也是首选，因为它可以提供高效的纹理采样性能。
+
+2-线性布局方式 (RHI_IMAGE_TILING_LINEAR)：</br>
+当需要对图像进行直接读写操作时，可以选择线性布局方式。例如，当 CPU 需要直接更新图像数据或进行像素级别的修改时，线性布局方式可能更为适合。
+线性布局方式可能不会提供与最优布局方式相同的性能和优化，因此在不需要直接读写操作时，通常不推荐使用线性布局方式。
+
+3-DRM 格式修饰符扩展布局方式 (RHI_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT)：</br>
+当使用了 DRM 格式修饰符扩展定义的特定布局方式时，可以选择该布局方式。
+DRM 格式修饰符扩展提供了对图像布局和属性的更灵活描述，可以满足特定的硬件要求或优化需求。
+
+4-RHI_IMAGE_TILING_MAX_ENUM 用的不多
+
+### 28 rhi! Rendering High-level Interface (Vulkan_rhi.h)
+其实RHI文件是一个对渲染API的高级抽象，它封装了很多Vulkan底层的函数，然后整合成高级的接口；通过rhi文件我们可以不直接使用VUlkanAPI，而是使用其
+更高层级的接口。同时我们也可以只替换底层而不影响上层。</br>
+
+一般来说Rhi的作用是:</br>
+1-将底层API(如Vulkan)封装成更高层次的接口</br>
+2-隐藏底层API的具体实现细节</br>
+3-提供跨平台的渲染功能接口</br>
+
+这个vulkan_rhi.h文件主要做了以下工作:
+
+定义了一些Vulkan对象(设备、队列等)相关的数据结构
+
+定义各种渲染资源(图像、缓冲区等)与命令的创建/更新接口
+
+定义图元绘制、渲染目标绑定等渲染流水线相关接口
+
+使用C++类和函数的形式对Vulkan进行了抽象封装
+
+隐藏底层Vulkan具体实现,提供跨平台接口。
+
+### 29 VUlkanUtil
+VulkanUtil这个类看来是封装一些Vulkan系统层面的实用函数,目的是为Vulkan RHI实现提供支持。
+
+主要功能有:
+1-封装Vulkan底层对象的创建/删除接口,如 sampler、buffer、image 等。
+2-提供资源格式转换、内存管理、图片生成等常用Utility函数。
+3-缓存和管理特定sampler对象,避免重复创建。
+4-封装图片格式转换和内存拷贝接口。
+5-这些函数都是Vulkan RHI实现需要频繁调用的底层操作。
+
+将它们提取出来作为Utility类,有以下优点:
+1-隐藏Vulkan API细节,简化RHI代码
+2-将非RHI逻辑移出RHI类,提高鲁棒性和可维护性
+3-方便集中管理相关Vulkan对象(sampler等)
+4-提高重复利用率,例如缓存sampler对象
+
+所以总之,VulkanUtil类是:
+1-为Vulkan RHI实现提供底层辅助功能
+2-简化和优化Vulkan相关代码
+3-提升Vulkan RHI代码质量和可维护性
+
+### 30 底层对象和高级对象 
+在Piccolo小引擎的架构内，并不会直接使用底层的 Vulkan对象，比如VkImage和VkDeviceMemory之类的，而是会做一定的封装。
+
+rhi_struct.h 在这个头文件内定义了支持所有API的一些对象接口，然后vulkan_rhi_resource.h继承这个rhi_struct.h文件，并且对Vulkan对象做一定的封装。
+
+比如以下的类其实是把vulkan底层的VkImage对象封装到了我们自定义的VulkanImage类里面，并只是增加来了一个get和一个set的方法:
+```cpp
+    class VulkanImage : public RHIImage
+    {
+    public:
+        void setResource(VkImage res)
+        {
+            m_resource = res;
+        }
+        VkImage &getResource()
+        {
+            return m_resource;
+        }
+    private:
+        VkImage m_resource;
+    };
+```
+好的 再画一下导图，相信对于Vulkan再小引擎内的结构，已经游刃有余了。
+
+### 31 Render_type  RHI bits 和 Vulkan bits间的映射
+举个简单的例子，Image View里的image_aspect_flags; 
+
+这是RHI里枚举的:
+```cpp
+    enum RHIImageAspectFlagBits {
+        RHI_IMAGE_ASPECT_COLOR_BIT = 0x00000001,
+        RHI_IMAGE_ASPECT_DEPTH_BIT = 0x00000002,
+        RHI_IMAGE_ASPECT_STENCIL_BIT = 0x00000004,
+        RHI_IMAGE_ASPECT_METADATA_BIT = 0x00000008,
+        RHI_IMAGE_ASPECT_PLANE_0_BIT = 0x00000010,
+        RHI_IMAGE_ASPECT_PLANE_1_BIT = 0x00000020,
+        RHI_IMAGE_ASPECT_PLANE_2_BIT = 0x00000040,
+        RHI_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT = 0x00000080,
+        RHI_IMAGE_ASPECT_MEMORY_PLANE_1_BIT_EXT = 0x00000100,
+        RHI_IMAGE_ASPECT_MEMORY_PLANE_2_BIT_EXT = 0x00000200,
+        RHI_IMAGE_ASPECT_MEMORY_PLANE_3_BIT_EXT = 0x00000400,
+        RHI_IMAGE_ASPECT_PLANE_0_BIT_KHR = RHI_IMAGE_ASPECT_PLANE_0_BIT,
+        RHI_IMAGE_ASPECT_PLANE_1_BIT_KHR = RHI_IMAGE_ASPECT_PLANE_1_BIT,
+        RHI_IMAGE_ASPECT_PLANE_2_BIT_KHR = RHI_IMAGE_ASPECT_PLANE_2_BIT,
+        RHI_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
+    };
+```
+然后这是Vulkan原本的VkImageAspectFlagBits
+
+```cpp
+VK_IMAGE_ASPECT_COLOR_BIT //表示图像的颜色方面。
+VK_IMAGE_ASPECT_DEPTH_BIT // 表示图像的深度方面。
+VK_IMAGE_ASPECT_STENCIL_BIT //表示图像的模板方面。
+VK_IMAGE_ASPECT_METADATA_BIT //表示图像的元数据方面。
+```
+他们开的就是后面这个十六进制数映射上的，枚举 RHIImageAspectFlagBits 中，RHI_IMAGE_ASPECT_COLOR_BIT 被赋予了值 0x00000001，而在 Vulkan 中，VK_IMAGE_ASPECT_COLOR_BIT 也被赋予了相同的值 0x00000001。这样，通过使用相同的值，可以将 RHI_IMAGE_ASPECT_COLOR_BIT 和 VK_IMAGE_ASPECT_COLOR_BIT 进行关联。
+
+在具体的图形渲染接口实现中，例如使用 Vulkan API，当你需要指定图像的颜色方面时，你可以使用 RHI_IMAGE_ASPECT_COLOR_BIT。然后，实现会将其映射为相应的 Vulkan 图像方面标识 VK_IMAGE_ASPECT_COLOR_BIT，以确保正确的图像访问和操作。
+
+
+### 32 十六进制表示法
+在计算机编程中，十六进制表示法使用前缀 0x 来标识一个数值是以十六进制形式表示的。后面的数字部分则是十六进制数的具体表示。
+
+例如，在 0x00000001 中，0x 是十六进制标识符，表示后面的数字是以十六进制表示的。而 00000001 则是具体的十六进制数，对应于十进制数 1。
+
+同样地，在 0xFF00 中，0x 是十六进制标识符，而 FF00 是具体的十六进制数，对应于十进制数 65280。
+
+因此，你可以将十六进制表示法理解为由 0x 标识符和后面的数字组成的形式，其中数字部分表示一个十六进制数。
+
+更多的例子:
+
+0x0A：这个表示中，x 的值是 A，因此 0x0A 表示十六进制数 0A，相当于十进制数 10。
+
+0x1F：这个表示中，x 的值是 F，因此 0x1F 表示十六进制数 1F，相当于十进制数 31。
+
+0xFF00：这个表示中，x 的值是 F，因此 0xFF00 表示十六进制数 FF00，相当于十进制数 65280。
+
+0x12345678：这个表示中，x 的值是不确定的，因为它不在有效的十六进制数位范围内。它只是用作示例，表示一个十六进制数。
+
+done!

@@ -14,6 +14,7 @@ namespace Piccolo
 {
     
 
+    // Vulkan API的RHI，继承了本来通用的接口类
     class VulkanRHI final : public RHI
     {
     public:

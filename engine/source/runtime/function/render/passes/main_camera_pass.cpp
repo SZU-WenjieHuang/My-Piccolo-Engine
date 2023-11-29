@@ -105,8 +105,10 @@ namespace Piccolo
                                    m_framebuffer.attachments[buffer_index].view);
         }
 
-        m_framebuffer.attachments[_main_camera_pass_post_process_buffer_odd].format  = RHI_FORMAT_R16G16B16A16_SFLOAT;
-        m_framebuffer.attachments[_main_camera_pass_post_process_buffer_even].format = RHI_FORMAT_R16G16B16A16_SFLOAT;
+        // post process 的两个attachment
+        m_framebuffer.attachments[_main_camera_pass_post_process_buffer_odd].format  = RHI_FORMAT_R16G16B16A16_SFLOAT;   // 16位高精度
+        m_framebuffer.attachments[_main_camera_pass_post_process_buffer_even].format = RHI_FORMAT_R16G16B16A16_SFLOAT;   // 16位高精度
+
         for (int attachment_index = _main_camera_pass_custom_attachment_count;
              attachment_index <
              _main_camera_pass_custom_attachment_count + _main_camera_pass_post_process_attachment_count;
@@ -117,7 +119,7 @@ namespace Piccolo
                                m_framebuffer.attachments[attachment_index].format,
                                RHI_IMAGE_TILING_OPTIMAL,
                                RHI_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | RHI_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |
-                               RHI_IMAGE_USAGE_SAMPLED_BIT,
+                               RHI_IMAGE_USAGE_SAMPLED_BIT,                                                          // 可以用来smaple的
                                RHI_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                m_framebuffer.attachments[attachment_index].image,
                                m_framebuffer.attachments[attachment_index].mem,
@@ -133,12 +135,21 @@ namespace Piccolo
                                    1,
                                    m_framebuffer.attachments[attachment_index].view);
         }
+        /*
+        Q1 这里为每个_main_camera_pass_custom_attachment创建了两个Image和ImageView
+        因为第二组是可以被Sampled的，第一组不是。
+        */
     }
 
     void MainCameraPass::setupRenderPass()
     {
-        RHIAttachmentDescription attachments[_main_camera_pass_attachment_count] = {};
+        
+        // Part1 准备9份 attachment Description
 
+        // -----------------------------------------------------------------------------------------------------
+        RHIAttachmentDescription attachments[_main_camera_pass_attachment_count] = {};    // 对应的是VkAttachmentDescription
+
+        // 01 _main_camera_pass_gbuffer_a (gbuffer_normal)
         RHIAttachmentDescription& gbuffer_normal_attachment_description = attachments[_main_camera_pass_gbuffer_a];
         gbuffer_normal_attachment_description.format  = m_framebuffer.attachments[_main_camera_pass_gbuffer_a].format;
         gbuffer_normal_attachment_description.samples = RHI_SAMPLE_COUNT_1_BIT;
@@ -149,6 +160,7 @@ namespace Piccolo
         gbuffer_normal_attachment_description.initialLayout  = RHI_IMAGE_LAYOUT_UNDEFINED;
         gbuffer_normal_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+        // 02 _main_camera_pass_gbuffer_b (gbuffer_metallic_roughness_shadingmodeid)
         RHIAttachmentDescription& gbuffer_metallic_roughness_shadingmodeid_attachment_description =
             attachments[_main_camera_pass_gbuffer_b];
         gbuffer_metallic_roughness_shadingmodeid_attachment_description.format =
@@ -163,6 +175,7 @@ namespace Piccolo
         gbuffer_metallic_roughness_shadingmodeid_attachment_description.finalLayout =
             RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+        // 03 _main_camera_pass_gbuffer_c (gbuffer_albedo)
         RHIAttachmentDescription& gbuffer_albedo_attachment_description = attachments[_main_camera_pass_gbuffer_c];
         gbuffer_albedo_attachment_description.format  = m_framebuffer.attachments[_main_camera_pass_gbuffer_c].format;
         gbuffer_albedo_attachment_description.samples = RHI_SAMPLE_COUNT_1_BIT;
@@ -173,6 +186,7 @@ namespace Piccolo
         gbuffer_albedo_attachment_description.initialLayout  = RHI_IMAGE_LAYOUT_UNDEFINED;
         gbuffer_albedo_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+        // 04 _main_camera_pass_backup_buffer_odd (backup_odd_color)
         RHIAttachmentDescription& backup_odd_color_attachment_description =
             attachments[_main_camera_pass_backup_buffer_odd];
         backup_odd_color_attachment_description.format =
@@ -185,6 +199,7 @@ namespace Piccolo
         backup_odd_color_attachment_description.initialLayout  = RHI_IMAGE_LAYOUT_UNDEFINED;
         backup_odd_color_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+        // 05 _main_camera_pass_backup_buffer_even (backup_even_color)
         RHIAttachmentDescription& backup_even_color_attachment_description =
             attachments[_main_camera_pass_backup_buffer_even];
         backup_even_color_attachment_description.format =
@@ -197,6 +212,7 @@ namespace Piccolo
         backup_even_color_attachment_description.initialLayout  = RHI_IMAGE_LAYOUT_UNDEFINED;
         backup_even_color_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+        // 06 post_process_odd_color
         RHIAttachmentDescription& post_process_odd_color_attachment_description =
             attachments[_main_camera_pass_post_process_buffer_odd];
         post_process_odd_color_attachment_description.format =
@@ -209,6 +225,7 @@ namespace Piccolo
         post_process_odd_color_attachment_description.initialLayout  = RHI_IMAGE_LAYOUT_UNDEFINED;
         post_process_odd_color_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+        // 07 post_process_even_color
         RHIAttachmentDescription& post_process_even_color_attachment_description =
             attachments[_main_camera_pass_post_process_buffer_even];
         post_process_even_color_attachment_description.format =
@@ -221,6 +238,7 @@ namespace Piccolo
         post_process_even_color_attachment_description.initialLayout  = RHI_IMAGE_LAYOUT_UNDEFINED;
         post_process_even_color_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+        // 08 depth_attachment
         RHIAttachmentDescription& depth_attachment_description = attachments[_main_camera_pass_depth];
         depth_attachment_description.format                   = m_rhi->getDepthImageInfo().depth_image_format;
         depth_attachment_description.samples                  = RHI_SAMPLE_COUNT_1_BIT;
@@ -231,6 +249,7 @@ namespace Piccolo
         depth_attachment_description.initialLayout            = RHI_IMAGE_LAYOUT_UNDEFINED;
         depth_attachment_description.finalLayout              = RHI_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+        // 09 swapchain_attachment
         RHIAttachmentDescription& swapchain_image_attachment_description =
             attachments[_main_camera_pass_swap_chain_image];
         swapchain_image_attachment_description.format         = m_rhi->getSwapchainInfo().image_format;
@@ -242,80 +261,83 @@ namespace Piccolo
         swapchain_image_attachment_description.initialLayout  = RHI_IMAGE_LAYOUT_UNDEFINED;
         swapchain_image_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-        RHISubpassDescription subpasses[_main_camera_subpass_count] = {};
+        // Part2 准备8份 SubpassDescription
 
+        // -------------------------------------------------------------------------------------------------------------
+        RHISubpassDescription subpasses[_main_camera_subpass_count] = {};                // 8份subpassDescription         
+
+        // 初始化三个color Attachment Reference
         RHIAttachmentReference base_pass_color_attachments_reference[3] = {};
         base_pass_color_attachments_reference[0].attachment = &gbuffer_normal_attachment_description - attachments;
         base_pass_color_attachments_reference[0].layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        base_pass_color_attachments_reference[1].attachment =
-            &gbuffer_metallic_roughness_shadingmodeid_attachment_description - attachments;
+        base_pass_color_attachments_reference[1].attachment = &gbuffer_metallic_roughness_shadingmodeid_attachment_description - attachments;
         base_pass_color_attachments_reference[1].layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         base_pass_color_attachments_reference[2].attachment = &gbuffer_albedo_attachment_description - attachments;
         base_pass_color_attachments_reference[2].layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+        // 初始化 Depth Attachment Reference
         RHIAttachmentReference base_pass_depth_attachment_reference {};
         base_pass_depth_attachment_reference.attachment = &depth_attachment_description - attachments;
         base_pass_depth_attachment_reference.layout     = RHI_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-        RHISubpassDescription& base_pass = subpasses[_main_camera_subpass_basepass];
-        base_pass.pipelineBindPoint     = RHI_PIPELINE_BIND_POINT_GRAPHICS;
-        base_pass.colorAttachmentCount =
-            sizeof(base_pass_color_attachments_reference) / sizeof(base_pass_color_attachments_reference[0]);
+        // 01 base_pass的SubpassDescription
+        RHISubpassDescription& base_pass  = subpasses[_main_camera_subpass_basepass];
+        base_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
+        base_pass.colorAttachmentCount    = sizeof(base_pass_color_attachments_reference) / sizeof(base_pass_color_attachments_reference[0]); // 3
         base_pass.pColorAttachments       = &base_pass_color_attachments_reference[0];
         base_pass.pDepthStencilAttachment = &base_pass_depth_attachment_reference;
         base_pass.preserveAttachmentCount = 0;
         base_pass.pPreserveAttachments    = NULL;
 
+        // 初始化 deferred_lighting pass的四个 input_attachment
         RHIAttachmentReference deferred_lighting_pass_input_attachments_reference[4] = {};
-        deferred_lighting_pass_input_attachments_reference[0].attachment =
-            &gbuffer_normal_attachment_description - attachments;
-        deferred_lighting_pass_input_attachments_reference[0].layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        deferred_lighting_pass_input_attachments_reference[1].attachment =
-            &gbuffer_metallic_roughness_shadingmodeid_attachment_description - attachments;
-        deferred_lighting_pass_input_attachments_reference[1].layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        deferred_lighting_pass_input_attachments_reference[2].attachment =
-            &gbuffer_albedo_attachment_description - attachments;
+        deferred_lighting_pass_input_attachments_reference[0].attachment = &gbuffer_normal_attachment_description - attachments;
+        deferred_lighting_pass_input_attachments_reference[0].layout     = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        deferred_lighting_pass_input_attachments_reference[1].attachment = &gbuffer_metallic_roughness_shadingmodeid_attachment_description - attachments;
+        deferred_lighting_pass_input_attachments_reference[1].layout     = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        deferred_lighting_pass_input_attachments_reference[2].attachment = &gbuffer_albedo_attachment_description - attachments;
         deferred_lighting_pass_input_attachments_reference[2].layout     = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         deferred_lighting_pass_input_attachments_reference[3].attachment = &depth_attachment_description - attachments;
         deferred_lighting_pass_input_attachments_reference[3].layout     = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+        // 初始化 deferred_lighting pass的 color_attachment
         RHIAttachmentReference deferred_lighting_pass_color_attachment_reference[1] = {};
-        deferred_lighting_pass_color_attachment_reference[0].attachment =
-            &backup_odd_color_attachment_description - attachments;
-        deferred_lighting_pass_color_attachment_reference[0].layout = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        deferred_lighting_pass_color_attachment_reference[0].attachment  = &backup_odd_color_attachment_description - attachments;
+        deferred_lighting_pass_color_attachment_reference[0].layout      = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-        RHISubpassDescription& deferred_lighting_pass = subpasses[_main_camera_subpass_deferred_lighting];
-        deferred_lighting_pass.pipelineBindPoint     = RHI_PIPELINE_BIND_POINT_GRAPHICS;
-        deferred_lighting_pass.inputAttachmentCount  = sizeof(deferred_lighting_pass_input_attachments_reference) /
-                                                      sizeof(deferred_lighting_pass_input_attachments_reference[0]);
-        deferred_lighting_pass.pInputAttachments    = &deferred_lighting_pass_input_attachments_reference[0];
-        deferred_lighting_pass.colorAttachmentCount = sizeof(deferred_lighting_pass_color_attachment_reference) /
-                                                      sizeof(deferred_lighting_pass_color_attachment_reference[0]);
+        // 02 deferred_lighting_pass 的SubpassDescription
+        RHISubpassDescription& deferred_lighting_pass  = subpasses[_main_camera_subpass_deferred_lighting];
+        deferred_lighting_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
+        deferred_lighting_pass.inputAttachmentCount    = sizeof(deferred_lighting_pass_input_attachments_reference) / sizeof(deferred_lighting_pass_input_attachments_reference[0]);
+        deferred_lighting_pass.pInputAttachments       = &deferred_lighting_pass_input_attachments_reference[0];
+        deferred_lighting_pass.colorAttachmentCount    = sizeof(deferred_lighting_pass_color_attachment_reference) / sizeof(deferred_lighting_pass_color_attachment_reference[0]);
         deferred_lighting_pass.pColorAttachments       = &deferred_lighting_pass_color_attachment_reference[0];
-        deferred_lighting_pass.pDepthStencilAttachment = NULL;
+        deferred_lighting_pass.pDepthStencilAttachment = NULL; // lighting Pass 不需要depth
         deferred_lighting_pass.preserveAttachmentCount = 0;
         deferred_lighting_pass.pPreserveAttachments    = NULL;
 
+        // forward_lighting_pass 的color_attachment
         RHIAttachmentReference forward_lighting_pass_color_attachments_reference[1] = {};
-        forward_lighting_pass_color_attachments_reference[0].attachment =
-            &backup_odd_color_attachment_description - attachments;
-        forward_lighting_pass_color_attachments_reference[0].layout = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        forward_lighting_pass_color_attachments_reference[0].attachment = &backup_odd_color_attachment_description - attachments;
+        forward_lighting_pass_color_attachments_reference[0].layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+        // forward_lighting_pass 的depth_attachment
         RHIAttachmentReference forward_lighting_pass_depth_attachment_reference {};
         forward_lighting_pass_depth_attachment_reference.attachment = &depth_attachment_description - attachments;
         forward_lighting_pass_depth_attachment_reference.layout     = RHI_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-        RHISubpassDescription& forward_lighting_pass = subpasses[_main_camera_subpass_forward_lighting];
-        forward_lighting_pass.pipelineBindPoint     = RHI_PIPELINE_BIND_POINT_GRAPHICS;
-        forward_lighting_pass.inputAttachmentCount  = 0U;
-        forward_lighting_pass.pInputAttachments     = NULL;
-        forward_lighting_pass.colorAttachmentCount  = sizeof(forward_lighting_pass_color_attachments_reference) /
-                                                     sizeof(forward_lighting_pass_color_attachments_reference[0]);
+        // forward_lighting_pass 的SubpassDescription
+        RHISubpassDescription& forward_lighting_pass  = subpasses[_main_camera_subpass_forward_lighting];
+        forward_lighting_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
+        forward_lighting_pass.inputAttachmentCount    = 0U;    // unsigned的0
+        forward_lighting_pass.pInputAttachments       = NULL;
+        forward_lighting_pass.colorAttachmentCount    = sizeof(forward_lighting_pass_color_attachments_reference) / sizeof(forward_lighting_pass_color_attachments_reference[0]);
         forward_lighting_pass.pColorAttachments       = &forward_lighting_pass_color_attachments_reference[0];
         forward_lighting_pass.pDepthStencilAttachment = &forward_lighting_pass_depth_attachment_reference;
         forward_lighting_pass.preserveAttachmentCount = 0;
         forward_lighting_pass.pPreserveAttachments    = NULL;
 
+        // 
         RHIAttachmentReference tone_mapping_pass_input_attachment_reference {};
         tone_mapping_pass_input_attachment_reference.attachment =
             &backup_odd_color_attachment_description - attachments;

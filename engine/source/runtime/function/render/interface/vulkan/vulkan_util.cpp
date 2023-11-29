@@ -183,6 +183,7 @@ namespace Piccolo
         static_cast<VulkanRHI*>(rhi)->endSingleTimeCommands(rhi_command_buffer);
     }
 
+    // createImage
     void VulkanUtil::createImage(VkPhysicalDevice      physical_device,
                                  VkDevice              device,
                                  uint32_t              image_width,
@@ -213,12 +214,14 @@ namespace Piccolo
         image_create_info.samples       = VK_SAMPLE_COUNT_1_BIT;
         image_create_info.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
 
+        // create image
         if (vkCreateImage(device, &image_create_info, nullptr, &image) != VK_SUCCESS)
         {
             LOG_ERROR("failed to create image!");
             return;
         }
 
+        // allocate memory
         VkMemoryRequirements memRequirements;
         vkGetImageMemoryRequirements(device, image, &memRequirements);
 
@@ -234,6 +237,7 @@ namespace Piccolo
             return;
         }
 
+        // bind memory and image
         vkBindImageMemory(device, image, memory, 0);
     }
 

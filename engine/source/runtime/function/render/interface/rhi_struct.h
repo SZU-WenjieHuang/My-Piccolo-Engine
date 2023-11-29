@@ -2,6 +2,8 @@
 
 #include "runtime/function/render/render_type.h"
 #include <optional>
+
+// 定义了最基础的一些rhi接口，把API的底层对象抽象成比较高级的应用程序对象
 namespace Piccolo
 {
     /////////////////////////////////////////////////
@@ -218,6 +220,20 @@ namespace Piccolo
         uint32_t apiVersion;
     };
 
+    // 对应的是VkAttachmentDescription
+    /*
+    typedef struct VkAttachmentDescription {
+    VkAttachmentDescriptionFlags    flags;
+    VkFormat                       format;
+    VkSampleCountFlagBits           samples;
+    VkAttachmentLoadOp              loadOp; 
+    VkAttachmentStoreOp             storeOp;
+    VkAttachmentLoadOp              stencilLoadOp;
+    VkAttachmentStoreOp             stencilStoreOp; 
+    VkImageLayout                   initialLayout;
+    VkImageLayout                   finalLayout;
+    } VkAttachmentDescription;
+    */
     struct RHIAttachmentDescription
     {
         RHIAttachmentDescriptionFlags flags;
@@ -977,6 +993,23 @@ namespace Piccolo
         RHIDependencyFlags dependencyFlags;
     };
 
+    /*
+    对应的是Vulkan中的VkSubpassDescription结构
+
+    typedef struct VkSubpassDescription {
+        VkSubpassDescriptionFlags      flags;  
+        VkPipelineBindPoint            pipelineBindPoint;
+        uint32_t                       inputAttachmentCount;
+        const VkAttachmentReference*    pInputAttachments;  
+        uint32_t                       colorAttachmentCount;  
+        const VkAttachmentReference*    pColorAttachments;
+        const VkAttachmentReference*    pResolveAttachments;
+        const VkAttachmentReference*    pDepthStencilAttachment;
+        uint32_t                       preserveAttachmentCount;
+        const uint32_t*                 pPreserveAttachments;
+    } VkSubpassDescription;
+    */
+
     struct RHISubpassDescription
     {
         RHISubpassDescriptionFlags flags;
@@ -1005,6 +1038,14 @@ namespace Piccolo
         RHIBufferView* pTexelBufferView = nullptr;
     };
 
+    /*
+    对应Vulkan中的VkAttachmentReference结构:
+    
+    typedef struct VkAttachmentReference {
+        uint32_t                  attachment;
+        VkImageLayout             layout;  
+        } VkAttachmentReference;
+    */
     struct RHIAttachmentReference
     {
         uint32_t attachment;

@@ -2903,10 +2903,10 @@ namespace Piccolo
             array_layers,
             miplevels);
 
-        image = new VulkanImage();                          // Image
-        memory = new VulkanDeviceMemory();                  // Memory
+        image = new VulkanImage();                          // RHI 高级对象 VulkanImage
+        memory = new VulkanDeviceMemory();                  // RHI 高级对象 VulkanDeviceMemory
         
-        ((VulkanImage*)image)->setResource(vk_image);
+        ((VulkanImage*)image)->setResource(vk_image);                   
         ((VulkanDeviceMemory*)memory)->setResource(vk_device_memory);
     }
 
@@ -2914,11 +2914,12 @@ namespace Piccolo
     void VulkanRHI::createImageView(RHIImage* image, RHIFormat format, RHIImageAspectFlags image_aspect_flags, RHIImageViewType view_type, uint32_t layout_count, uint32_t miplevels,
         RHIImageView* &image_view)
     {
-        image_view = new VulkanImageView();
+        image_view = new VulkanImageView();                 // RHI 高级对象 VulkanImageView
         VkImage vk_image = ((VulkanImage*)image)->getResource();
-        VkImageView vk_image_view;
+
+        VkImageView vk_image_view;                          // Vulkan 底层对象 ImageView
         vk_image_view = VulkanUtil::createImageView(m_device, vk_image, (VkFormat)format, image_aspect_flags, (VkImageViewType)view_type, layout_count, miplevels);
-        ((VulkanImageView*)image_view)->setResource(vk_image_view);
+        ((VulkanImageView*)image_view)->setResource(vk_image_view);  
     }
 
     void VulkanRHI::createGlobalImage(RHIImage* &image, RHIImageView* &image_view, VmaAllocation& image_allocation, uint32_t texture_image_width, uint32_t texture_image_height, void* texture_image_pixels, RHIFormat texture_image_format, uint32_t miplevels)

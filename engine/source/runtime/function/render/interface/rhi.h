@@ -18,6 +18,8 @@ namespace Piccolo
         std::shared_ptr<WindowSystem> window_system;
     };
     
+    // RHI 是更底层的图形API抽象
+    // 支持 Vulkan，DirectX 12， Metal，OpenGL...
     class RHI
     {
     public:

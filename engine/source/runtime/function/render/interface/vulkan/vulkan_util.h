@@ -11,6 +11,7 @@
 
 namespace Piccolo
 {
+    // 一些Vulkan系统层面经常调用的函数
     class VulkanUtil
     {
     public:

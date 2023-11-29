@@ -7,6 +7,8 @@
 
 namespace Piccolo
 {
+    // 继承自rhi_struct.h里的对象，把一些vulkan底层的对象，封装成一些高级对象
+    // 实现了一个Vulkan到RHI对象模型的映射关系，简化了Vulkan RHI的实现，所有操作都是基于RHI接口
     class VulkanBuffer : public RHIBuffer
     {
     public:

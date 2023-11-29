@@ -33,7 +33,7 @@ namespace Piccolo
 
     // All subPass of main_camera_pass
     // A renderpass can include multiple serial subpasses
-    // 枚举了subpass
+    // 枚举了subpass，很聪明的把subpass_count放到了最后一个
     enum
     {
         _main_camera_subpass_basepass = 0,
