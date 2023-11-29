@@ -2881,32 +2881,36 @@ namespace Piccolo
         VulkanUtil::copyBuffer(this, vk_src_buffer, vk_dst_buffer, srcOffset, dstOffset, size);
     }
 
+    // create vulkan image
     void VulkanRHI::createImage(uint32_t image_width, uint32_t image_height, RHIFormat format, RHIImageTiling image_tiling, RHIImageUsageFlags image_usage_flags, RHIMemoryPropertyFlags memory_property_flags,
         RHIImage* &image, RHIDeviceMemory* &memory, RHIImageCreateFlags image_create_flags, uint32_t array_layers, uint32_t miplevels)
     {
         VkImage vk_image;
         VkDeviceMemory vk_device_memory;
+
         VulkanUtil::createImage(
             m_physical_device,
             m_device,
             image_width,
             image_height,
             (VkFormat)format,
-            (VkImageTiling)image_tiling,
-            (VkImageUsageFlags)image_usage_flags,
-            (VkMemoryPropertyFlags)memory_property_flags,
+            (VkImageTiling)image_tiling,                     // Image的布局方式
+            (VkImageUsageFlags)image_usage_flags,            // Image的使用标志
+            (VkMemoryPropertyFlags)memory_property_flags,    // 内存的标志位 如DEVICE_LOCAL
             vk_image,
             vk_device_memory,
             (VkImageCreateFlags)image_create_flags,
             array_layers,
             miplevels);
 
-        image = new VulkanImage();
-        memory = new VulkanDeviceMemory();
+        image = new VulkanImage();                          // Image
+        memory = new VulkanDeviceMemory();                  // Memory
+        
         ((VulkanImage*)image)->setResource(vk_image);
         ((VulkanDeviceMemory*)memory)->setResource(vk_device_memory);
     }
 
+    // create vulkan image view
     void VulkanRHI::createImageView(RHIImage* image, RHIFormat format, RHIImageAspectFlags image_aspect_flags, RHIImageViewType view_type, uint32_t layout_count, uint32_t miplevels,
         RHIImageView* &image_view)
     {

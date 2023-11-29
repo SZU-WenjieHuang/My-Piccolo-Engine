@@ -13,6 +13,7 @@ namespace Piccolo
 {
     class RenderResourceBase;
 
+    // 继承自RenderPassInitInfo
     struct MainCameraPassInitInfo : RenderPassInitInfo
     {
         bool enble_fxaa;
@@ -21,6 +22,7 @@ namespace Piccolo
     class MainCameraPass : public RenderPass
     {
     public:
+        // 枚举不同的 DescriptorSetLayout
         // 1: per mesh layout
         // 2: global layout
         // 3: mesh per material layout
@@ -40,6 +42,7 @@ namespace Piccolo
             _layout_type_count
         };
 
+        // 枚举不同的Render Pipeline
         // 1. model
         // 2. sky box
         // 3. axis
@@ -55,10 +58,12 @@ namespace Piccolo
             _render_pipeline_type_count
         };
 
+        // 这里的 override final 表示重写基类里的函数，并且不允许子类对其重写
         void initialize(const RenderPassInitInfo* init_info) override final;
 
         void preparePassData(std::shared_ptr<RenderResourceBase> render_resource) override final;
 
+        // draw(在这里是deffered rendering)需要传入各个subpass和swapchain_image_index
         void draw(ColorGradingPass& color_grading_pass,
             FXAAPass& fxaa_pass,
             ToneMappingPass& tone_mapping_pass,
@@ -67,6 +72,7 @@ namespace Piccolo
             ParticlePass& particle_pass,
             uint32_t          current_swapchain_image_index);
 
+        // drawForward也是需要传入 subpass和swapchain_image_index
         void drawForward(ColorGradingPass& color_grading_pass,
             FXAAPass& fxaa_pass,
             ToneMappingPass& tone_mapping_pass,

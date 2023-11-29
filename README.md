@@ -310,4 +310,114 @@ return 0;
 
 ### 22 理解double buffering里的 odd 和 even的使用
 
+### 23 override final
+在main_camera_pass.h段落里有一些代码如下所示:
 
+```cpp
+        void initialize(const RenderPassInitInfo* init_info) override final;
+
+        void preparePassData(std::shared_ptr<RenderResourceBase> render_resource) override final;
+```
+
+main_camera_pass继承自render_pass。override显式地表示main_camera_pass会重写基类里的函数，其实不加也可以。
+final表示其不能被子类所重写。
+
+### 24 接口的理解
+是的，在C++中，一个类的public函数可以被称为该类对外的接口。public函数在类的定义中声明并定义，可以被类的对象或外部代码直接访问和调用。这些public函数定义了类与外部世界的交互方式，因此可以看作是该类对外的接口。
+
+通过public函数，外部代码可以使用类的实例来执行特定的操作或获取信息，而无需了解类的内部实现细节。这种封装性和抽象性是面向对象编程的重要特性之一，它允许类的实现细节被隐藏，并提供了更好的模块化和代码复用性。
+
+而private函数就只允许在类的内部使用，一般是被public函数调用。
+
+### 25 枚举的作用
+enum枚举的作用有很多，比如增加可读性和可维护性：枚举提供了一种直观的方式来表示一组相关的命名常量。通过使用枚举，可以用有意义的名称来标识不同的取值，使代码更易读、更易理解;
+
+枚举常量的类型安全：枚举常量是静态类型的，编译器会在编译时进行类型检查。这意味着在使用枚举常量时，可以避免使用不正确的取值或类型错误，从而减少了潜在的错误。
+
+在C和C++中，如果没有显式指定枚举的基础类型，默认情况下枚举的基础类型是int。要是没有特定的标明index，则就是默认从0开始递增;
+
+比如以下这个enum:
+```cpp
+    enum
+    {
+        // attachments
+        _main_camera_pass_gbuffer_a                     = 0,
+        _main_camera_pass_gbuffer_b                     = 1,
+        _main_camera_pass_gbuffer_c                     = 2,
+        _main_camera_pass_backup_buffer_odd             = 3,
+        _main_camera_pass_backup_buffer_even            = 4,
+        _main_camera_pass_post_process_buffer_odd       = 5,
+        _main_camera_pass_post_process_buffer_even      = 6,
+        _main_camera_pass_depth                         = 7,
+        _main_camera_pass_swap_chain_image              = 8,
+        // attachment count
+        _main_camera_pass_custom_attachment_count       = 5,
+        _main_camera_pass_post_process_attachment_count = 2,
+        _main_camera_pass_attachment_count              = 9,
+    };
+```
+
+然后使用的话: </br>
+```cpp
+m_framebuffer.attachments[_main_camera_pass_gbuffer_a].format          = RHI_FORMAT_R8G8B8A8_UNORM;        // RGBA
+```
+相当于 
+```cpp
+m_framebuffer.attachments[0]
+```
+用==的话:</br>
+```cpp
+buffer_index == _main_camera_pass_gbuffer_a
+```
+相当于
+```cpp
+buffer_index == 0
+```
+
+### 26 命名空间内作用域
+有时候我会好奇，在一个namespace内，但是在class外的数据，比如int和enum和struct，他们的生命周期是多少？</br>
+这些算是全局静态变量，他们的生命周期与程序的生命周期相同，在程序启动时进行初始化，直到程序结束时被销毁。它们可以在命名空间内的任何位置访问，并且在命名空间外部可以通过限定名来访问。
+
+举个例子， 比如在render_pass.h内: 在这里 这个enum和这个VisiableNodes的struct就是全局静态的。然后在Piccolo的namespace内都可见。
+然后namesapce外访问的话需要这样: Piccolo::VisiableNodes。
+
+```cpp
+//......
+
+namespace Piccolo
+{
+    // ...
+
+    enum
+    {
+        // attachments
+        _main_camera_pass_gbuffer_a                     = 0,
+        _main_camera_pass_gbuffer_b                     = 1,
+        _main_camera_pass_gbuffer_c                     = 2,
+        _main_camera_pass_backup_buffer_odd             = 3,
+        _main_camera_pass_backup_buffer_even            = 4,
+        _main_camera_pass_post_process_buffer_odd       = 5,
+        _main_camera_pass_post_process_buffer_even      = 6,
+        _main_camera_pass_depth                         = 7,
+        _main_camera_pass_swap_chain_image              = 8,
+        // attachment count
+        _main_camera_pass_custom_attachment_count       = 5,
+        _main_camera_pass_post_process_attachment_count = 2,
+        _main_camera_pass_attachment_count              = 9,
+    };
+
+    struct VisiableNodes
+    {
+        std::vector<RenderMeshNode>*              p_directional_light_visible_mesh_nodes {nullptr};   // directional_light 可见
+        std::vector<RenderMeshNode>*              p_point_lights_visible_mesh_nodes {nullptr};        // point_lights 可见
+        std::vector<RenderMeshNode>*              p_main_camera_visible_mesh_nodes {nullptr};         // main camera 可见
+        RenderAxisNode*                           p_axis_node {nullptr};                              // 坐标轴节点
+    };
+
+    class RenderPass : public RenderPassBase
+    {
+        //......
+    };
+} // namespace Piccolo
+
+```

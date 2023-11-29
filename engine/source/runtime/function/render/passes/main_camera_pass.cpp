@@ -23,6 +23,7 @@ namespace Piccolo
 {
     void MainCameraPass::initialize(const RenderPassInitInfo* init_info)
     {
+        // 先调用了基类的initialize方法完成基类初始化
         RenderPass::initialize(nullptr);
 
         const MainCameraPassInitInfo* _init_info = static_cast<const MainCameraPassInitInfo*>(init_info);
@@ -49,17 +50,19 @@ namespace Piccolo
         }
     }
 
+    // setupAttachments
     void MainCameraPass::setupAttachments()
     {
         m_framebuffer.attachments.resize(_main_camera_pass_custom_attachment_count +
-                                         _main_camera_pass_post_process_attachment_count);
+                                         _main_camera_pass_post_process_attachment_count);   //5+2
 
-        m_framebuffer.attachments[_main_camera_pass_gbuffer_a].format          = RHI_FORMAT_R8G8B8A8_UNORM;
-        m_framebuffer.attachments[_main_camera_pass_gbuffer_b].format          = RHI_FORMAT_R8G8B8A8_UNORM;
-        m_framebuffer.attachments[_main_camera_pass_gbuffer_c].format          = RHI_FORMAT_R8G8B8A8_SRGB;
-        m_framebuffer.attachments[_main_camera_pass_backup_buffer_odd].format  = RHI_FORMAT_R16G16B16A16_SFLOAT;
-        m_framebuffer.attachments[_main_camera_pass_backup_buffer_even].format = RHI_FORMAT_R16G16B16A16_SFLOAT;
+        m_framebuffer.attachments[_main_camera_pass_gbuffer_a].format          = RHI_FORMAT_R8G8B8A8_UNORM;        // RGBA
+        m_framebuffer.attachments[_main_camera_pass_gbuffer_b].format          = RHI_FORMAT_R8G8B8A8_UNORM;        // RGBA
+        m_framebuffer.attachments[_main_camera_pass_gbuffer_c].format          = RHI_FORMAT_R8G8B8A8_SRGB;         // SRGB
+        m_framebuffer.attachments[_main_camera_pass_backup_buffer_odd].format  = RHI_FORMAT_R16G16B16A16_SFLOAT;   // 16位高精度
+        m_framebuffer.attachments[_main_camera_pass_backup_buffer_even].format = RHI_FORMAT_R16G16B16A16_SFLOAT;   // 16位高精度
 
+        // 为每一个buffer创建image和imageview
         for (int buffer_index = 0; buffer_index < _main_camera_pass_custom_attachment_count; ++buffer_index)
         {
             if (buffer_index == _main_camera_pass_gbuffer_a)
@@ -69,7 +72,7 @@ namespace Piccolo
                                    m_framebuffer.attachments[_main_camera_pass_gbuffer_a].format,
                                    RHI_IMAGE_TILING_OPTIMAL,
                                    RHI_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | RHI_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                                   RHI_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                                   RHI_IMAGE_USAGE_TRANSFER_SRC_BIT,    // 需要被当作传输source
                                    RHI_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                    m_framebuffer.attachments[_main_camera_pass_gbuffer_a].image,
                                    m_framebuffer.attachments[_main_camera_pass_gbuffer_a].mem,

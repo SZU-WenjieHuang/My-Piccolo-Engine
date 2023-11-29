@@ -175,7 +175,6 @@ namespace Piccolo
                           particle_pass,
                           vulkan_rhi->m_current_swapchain_image_index);
 
-        
         g_runtime_global_context.m_debugdraw_manager->draw(vulkan_rhi->m_current_swapchain_image_index);
 
         vulkan_rhi->submitRendering(std::bind(&RenderPipeline::passUpdateAfterRecreateSwapchain, this));
@@ -183,7 +182,7 @@ namespace Piccolo
         static_cast<ParticlePass*>(m_particle_pass.get())->simulate();
     }
 
-    // 和forward是相似的 具体的区分在pass的内部logic
+    // forward的是drawForward，deffered的是draw
     void RenderPipeline::deferredRender(std::shared_ptr<RHI> rhi, std::shared_ptr<RenderResourceBase> render_resource)
     {
         VulkanRHI*      vulkan_rhi      = static_cast<VulkanRHI*>(rhi.get());
