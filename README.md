@@ -569,3 +569,78 @@ VK_IMAGE_ASPECT_METADATA_BIT //表示图像的元数据方面。
 0x12345678：这个表示中，x 的值是不确定的，因为它不在有效的十六进制数位范围内。它只是用作示例，表示一个十六进制数。
 
 done!
+
+### 33 Struct的初始化
+像这样的结构体:
+```cpp
+struct RHIAttachmentReference
+{
+    uint32_t attachment;
+    RHIImageLayout layout;
+};
+```
+可以这样子初始化:
+```cpp
+RHIAttachmentReference color_grading_pass_input_attachment_reference {};
+```
+并不需要加struct的关键字
+
+### 34 {} 内嵌作用域
+
+看代码的时候会发现一种情况: 会有一些没有title的作用域如下:
+
+```cpp
+    void MainCameraPass::setupDescriptorSetLayout()
+    {
+        m_descriptor_infos.resize(_layout_type_count);   // 7 种不同的Layout
+
+        {
+            RHIDescriptorSetLayoutBinding mesh_mesh_layout_bindings[1];
+
+            RHIDescriptorSetLayoutBinding& mesh_mesh_layout_uniform_buffer_binding = mesh_mesh_layout_bindings[0];
+            mesh_mesh_layout_uniform_buffer_binding.binding                       = 0;
+            mesh_mesh_layout_uniform_buffer_binding.descriptorType                = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            mesh_mesh_layout_uniform_buffer_binding.descriptorCount               = 1;
+            mesh_mesh_layout_uniform_buffer_binding.stageFlags                    = RHI_SHADER_STAGE_VERTEX_BIT;
+            mesh_mesh_layout_uniform_buffer_binding.pImmutableSamplers            = NULL;
+
+            RHIDescriptorSetLayoutCreateInfo mesh_mesh_layout_create_info {};
+            mesh_mesh_layout_create_info.sType        = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            mesh_mesh_layout_create_info.bindingCount = 1;
+            mesh_mesh_layout_create_info.pBindings    = mesh_mesh_layout_bindings;
+
+            if (m_rhi->createDescriptorSetLayout(&mesh_mesh_layout_create_info, m_descriptor_infos[_per_mesh].layout) != RHI_SUCCESS)
+            {
+                throw std::runtime_error("create mesh mesh layout");
+            }
+        }
+
+        // ...
+    }
+```
+
+这类作用域其实是内嵌作用域，起到的作用是变量只在这个内嵌块中有效,外部无效，相当于给变量"包裹"起来,限定其作用范围。
+
+### 35 一个pipelineLayout包含多个DescriptorLayout的情况
+假设我们要渲染一个3D场景,包含:</br>
+Environment texture</br>
+Model texture</br>
+Framebuffer object (FBO)</br>
+
+我们可以定义:</br>
+Descriptor Set Layout 1:</br>
+Bind the environment texture</br>
+
+Descriptor Set Layout 2:</br>
+Bind the model texture</br>
+
+Descriptor Set Layout 3:</br>
+Bind the FBO</br>
+
+然后定义一个Pipeline Layout包含他们三个</br>
+Pipeline Layout:</br>
+Bind Descriptor Set Layout 1</br>
+Bind Descriptor Set Layout 2</br>
+Bind Descriptor Set Layout 3</br>
+
+这样的好处是我们可以使用不同的descriptorSet来管理不同的resources</br>

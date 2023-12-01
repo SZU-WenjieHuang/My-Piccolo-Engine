@@ -1115,6 +1115,7 @@ namespace Piccolo
         RHI_COMPARE_OP_MAX_ENUM = 0x7FFFFFFF
     };
 
+    // DescriptorSet Layout 里Binding的类型
     enum RHIDescriptorType : int
     {
         RHI_DESCRIPTOR_TYPE_SAMPLER = 0,
@@ -1123,8 +1124,8 @@ namespace Piccolo
         RHI_DESCRIPTOR_TYPE_STORAGE_IMAGE = 3,
         RHI_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER = 4,
         RHI_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER = 5,
-        RHI_DESCRIPTOR_TYPE_UNIFORM_BUFFER = 6,
-        RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER = 7,
+        RHI_DESCRIPTOR_TYPE_UNIFORM_BUFFER = 6,   
+        RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER = 7,   // storage buffer是存储大量数据的， 比如来自compute shader的信息
         RHI_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC = 8,
         RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC = 9,
         RHI_DESCRIPTOR_TYPE_INPUT_ATTACHMENT = 10,
@@ -1612,7 +1613,7 @@ namespace Piccolo
     };
 
     enum RHIDependencyFlagBits {
-        RHI_DEPENDENCY_BY_REGION_BIT = 0x00000001,
+        RHI_DEPENDENCY_BY_REGION_BIT = 0x00000001,                                  // 表示基于Image的读写依赖，比如一个读图像，一个写图像
         RHI_DEPENDENCY_DEVICE_GROUP_BIT = 0x00000004,
         RHI_DEPENDENCY_VIEW_LOCAL_BIT = 0x00000002,
         RHI_DEPENDENCY_VIEW_LOCAL_BIT_KHR = RHI_DEPENDENCY_VIEW_LOCAL_BIT,

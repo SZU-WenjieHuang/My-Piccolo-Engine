@@ -55,7 +55,7 @@ namespace Piccolo
             _render_pipeline_type_skybox,
             _render_pipeline_type_axis,
             _render_pipeline_type_particle,
-            _render_pipeline_type_count
+            _render_pipeline_type_count  // = 6
         };
 
         // 这里的 override final 表示重写基类里的函数，并且不允许子类对其重写

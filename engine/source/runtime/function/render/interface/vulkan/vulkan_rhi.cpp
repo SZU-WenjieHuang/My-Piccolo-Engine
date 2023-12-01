@@ -2770,9 +2770,9 @@ namespace Piccolo
 
     RHIShader* VulkanRHI::createShaderModule(const std::vector<unsigned char>& shader_code)
     {
-        RHIShader* shahder = new VulkanShader();
+        RHIShader* shahder = new VulkanShader();                                           // 封装的高级对象
 
-        VkShaderModule vk_shader =  VulkanUtil::createShaderModule(m_device, shader_code);
+        VkShaderModule vk_shader =  VulkanUtil::createShaderModule(m_device, shader_code); // vulkan的底层对象
 
         ((VulkanShader*)shahder)->setResource(vk_shader);
 

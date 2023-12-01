@@ -141,6 +141,8 @@ namespace Piccolo
         */
     }
 
+
+
     void MainCameraPass::setupRenderPass()
     {
         
@@ -268,7 +270,7 @@ namespace Piccolo
 
         // 初始化三个color Attachment Reference
         RHIAttachmentReference base_pass_color_attachments_reference[3] = {};
-        base_pass_color_attachments_reference[0].attachment = &gbuffer_normal_attachment_description - attachments;
+        base_pass_color_attachments_reference[0].attachment = &gbuffer_normal_attachment_description - attachments;                           // 传入的是偏移量 要和attachment的地址一起使用才能等价为指针
         base_pass_color_attachments_reference[0].layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         base_pass_color_attachments_reference[1].attachment = &gbuffer_metallic_roughness_shadingmodeid_attachment_description - attachments;
         base_pass_color_attachments_reference[1].layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -326,7 +328,7 @@ namespace Piccolo
         forward_lighting_pass_depth_attachment_reference.attachment = &depth_attachment_description - attachments;
         forward_lighting_pass_depth_attachment_reference.layout     = RHI_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-        // forward_lighting_pass 的SubpassDescription
+        // forward_lighting_pass 的 SubpassDescription
         RHISubpassDescription& forward_lighting_pass  = subpasses[_main_camera_subpass_forward_lighting];
         forward_lighting_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
         forward_lighting_pass.inputAttachmentCount    = 0U;    // unsigned的0
@@ -337,18 +339,18 @@ namespace Piccolo
         forward_lighting_pass.preserveAttachmentCount = 0;
         forward_lighting_pass.pPreserveAttachments    = NULL;
 
-        // 
+        // tone_mapping_pass 的 input_attachment
         RHIAttachmentReference tone_mapping_pass_input_attachment_reference {};
-        tone_mapping_pass_input_attachment_reference.attachment =
-            &backup_odd_color_attachment_description - attachments;
-        tone_mapping_pass_input_attachment_reference.layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        tone_mapping_pass_input_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
+        tone_mapping_pass_input_attachment_reference.layout     = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+        // tone_mapping_pass 的 color_attachment
         RHIAttachmentReference tone_mapping_pass_color_attachment_reference {};
-        tone_mapping_pass_color_attachment_reference.attachment =
-            &backup_even_color_attachment_description - attachments;
-        tone_mapping_pass_color_attachment_reference.layout = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        tone_mapping_pass_color_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
+        tone_mapping_pass_color_attachment_reference.layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-        RHISubpassDescription& tone_mapping_pass   = subpasses[_main_camera_subpass_tone_mapping];
+        // tone_mapping_pass 的 SubpassDescription
+        RHISubpassDescription& tone_mapping_pass  = subpasses[_main_camera_subpass_tone_mapping];
         tone_mapping_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
         tone_mapping_pass.inputAttachmentCount    = 1;
         tone_mapping_pass.pInputAttachments       = &tone_mapping_pass_input_attachment_reference;
@@ -358,25 +360,24 @@ namespace Piccolo
         tone_mapping_pass.preserveAttachmentCount = 0;
         tone_mapping_pass.pPreserveAttachments    = NULL;
 
+        // color_grading_pass 的input attachment
         RHIAttachmentReference color_grading_pass_input_attachment_reference {};
-        color_grading_pass_input_attachment_reference.attachment =
-            &backup_even_color_attachment_description - attachments;
-        color_grading_pass_input_attachment_reference.layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        color_grading_pass_input_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
+        color_grading_pass_input_attachment_reference.layout     = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+        // color_grading_pass 的color attachment
         RHIAttachmentReference color_grading_pass_color_attachment_reference {};
         if (m_enable_fxaa)
         {
-            color_grading_pass_color_attachment_reference.attachment =
-                &post_process_odd_color_attachment_description - attachments;
+            color_grading_pass_color_attachment_reference.attachment = &post_process_odd_color_attachment_description - attachments;
         }
         else
         {
-            color_grading_pass_color_attachment_reference.attachment =
-                &backup_odd_color_attachment_description - attachments;
+            color_grading_pass_color_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
         }
         color_grading_pass_color_attachment_reference.layout = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-        // Add Color_grading subpass
+        // Add Color_grading subpass's SubpassDescription
         RHISubpassDescription& color_grading_pass   = subpasses[_main_camera_subpass_color_grading];
         color_grading_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
         color_grading_pass.inputAttachmentCount    = 1;
@@ -387,11 +388,11 @@ namespace Piccolo
         color_grading_pass.preserveAttachmentCount = 0;
         color_grading_pass.pPreserveAttachments    = NULL;
 
+        // fxaa 的 input_attachment
         RHIAttachmentReference fxaa_pass_input_attachment_reference {};
         if (m_enable_fxaa)
         {
-            fxaa_pass_input_attachment_reference.attachment =
-                &post_process_odd_color_attachment_description - attachments;
+            fxaa_pass_input_attachment_reference.attachment = &post_process_odd_color_attachment_description - attachments;
         }
         else
         {
@@ -399,11 +400,13 @@ namespace Piccolo
         }
         fxaa_pass_input_attachment_reference.layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+        // fxaa 的 color attachment
         RHIAttachmentReference fxaa_pass_color_attachment_reference {};
         fxaa_pass_color_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
         fxaa_pass_color_attachment_reference.layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-        RHISubpassDescription& fxaa_pass   = subpasses[_main_camera_subpass_fxaa];
+        // fxaa的subpass
+        RHISubpassDescription& fxaa_pass  = subpasses[_main_camera_subpass_fxaa];
         fxaa_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
         fxaa_pass.inputAttachmentCount    = 1;
         fxaa_pass.pInputAttachments       = &fxaa_pass_input_attachment_reference;
@@ -413,12 +416,14 @@ namespace Piccolo
         fxaa_pass.preserveAttachmentCount = 0;
         fxaa_pass.pPreserveAttachments    = NULL;
 
+        // ui Pass的color attachment
         RHIAttachmentReference ui_pass_color_attachment_reference {};
         ui_pass_color_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
         ui_pass_color_attachment_reference.layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         uint32_t ui_pass_preserve_attachment = &backup_odd_color_attachment_description - attachments;
 
+        // UI Pass的subpass
         RHISubpassDescription& ui_pass  = subpasses[_main_camera_subpass_ui];
         ui_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
         ui_pass.inputAttachmentCount    = 0;
@@ -429,22 +434,22 @@ namespace Piccolo
         ui_pass.preserveAttachmentCount = 1;
         ui_pass.pPreserveAttachments    = &ui_pass_preserve_attachment;
 
+        // combine UI Pass的input reference(有两个 UI + 原始的画面)
         RHIAttachmentReference combine_ui_pass_input_attachments_reference[2] = {};
-        combine_ui_pass_input_attachments_reference[0].attachment =
-            &backup_odd_color_attachment_description - attachments;
+        combine_ui_pass_input_attachments_reference[0].attachment = &backup_odd_color_attachment_description - attachments;
         combine_ui_pass_input_attachments_reference[0].layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        combine_ui_pass_input_attachments_reference[1].attachment =
-            &backup_even_color_attachment_description - attachments;
+        combine_ui_pass_input_attachments_reference[1].attachment = &backup_even_color_attachment_description - attachments;
         combine_ui_pass_input_attachments_reference[1].layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+        // combine UI Pass的 color attachment
         RHIAttachmentReference combine_ui_pass_color_attachment_reference {};
         combine_ui_pass_color_attachment_reference.attachment = &swapchain_image_attachment_description - attachments;
         combine_ui_pass_color_attachment_reference.layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-        RHISubpassDescription& combine_ui_pass = subpasses[_main_camera_subpass_combine_ui];
-        combine_ui_pass.pipelineBindPoint      = RHI_PIPELINE_BIND_POINT_GRAPHICS;
-        combine_ui_pass.inputAttachmentCount   = sizeof(combine_ui_pass_input_attachments_reference) /
-                                                 sizeof(combine_ui_pass_input_attachments_reference[0]);
+        // combine UI 的subpass
+        RHISubpassDescription& combine_ui_pass  = subpasses[_main_camera_subpass_combine_ui];
+        combine_ui_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
+        combine_ui_pass.inputAttachmentCount    = sizeof(combine_ui_pass_input_attachments_reference) /  sizeof(combine_ui_pass_input_attachments_reference[0]);
         combine_ui_pass.pInputAttachments       = combine_ui_pass_input_attachments_reference;
         combine_ui_pass.colorAttachmentCount    = 1;
         combine_ui_pass.pColorAttachments       = &combine_ui_pass_color_attachment_reference;
@@ -452,105 +457,86 @@ namespace Piccolo
         combine_ui_pass.preserveAttachmentCount = 0;
         combine_ui_pass.pPreserveAttachments    = NULL;
 
+        // Part3 准备8份 SubpassDependency
+
+        // -------------------------------------------------------------------------------------------------------------
         RHISubpassDependency dependencies[8] = {};
 
         RHISubpassDependency& deferred_lighting_pass_depend_on_shadow_map_pass = dependencies[0];
-        deferred_lighting_pass_depend_on_shadow_map_pass.srcSubpass           = RHI_SUBPASS_EXTERNAL;
-        deferred_lighting_pass_depend_on_shadow_map_pass.dstSubpass           = _main_camera_subpass_deferred_lighting;
-        deferred_lighting_pass_depend_on_shadow_map_pass.srcStageMask  = RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        deferred_lighting_pass_depend_on_shadow_map_pass.dstStageMask  = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        deferred_lighting_pass_depend_on_shadow_map_pass.srcAccessMask = RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        deferred_lighting_pass_depend_on_shadow_map_pass.dstAccessMask = RHI_ACCESS_SHADER_READ_BIT;
-        deferred_lighting_pass_depend_on_shadow_map_pass.dependencyFlags = 0; // NOT BY REGION
+        deferred_lighting_pass_depend_on_shadow_map_pass.srcSubpass            = RHI_SUBPASS_EXTERNAL;
+        deferred_lighting_pass_depend_on_shadow_map_pass.dstSubpass            = _main_camera_subpass_deferred_lighting;
+        deferred_lighting_pass_depend_on_shadow_map_pass.srcStageMask          = RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        deferred_lighting_pass_depend_on_shadow_map_pass.dstStageMask          = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;                // 执行顺序
+        deferred_lighting_pass_depend_on_shadow_map_pass.srcAccessMask         = RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        deferred_lighting_pass_depend_on_shadow_map_pass.dstAccessMask         = RHI_ACCESS_SHADER_READ_BIT;                            // 读写依赖
+        deferred_lighting_pass_depend_on_shadow_map_pass.dependencyFlags       = 0; // NOT BY REGION
 
         RHISubpassDependency& deferred_lighting_pass_depend_on_base_pass = dependencies[1];
-        deferred_lighting_pass_depend_on_base_pass.srcSubpass           = _main_camera_subpass_basepass;
-        deferred_lighting_pass_depend_on_base_pass.dstSubpass           = _main_camera_subpass_deferred_lighting;
-        deferred_lighting_pass_depend_on_base_pass.srcStageMask =
-            RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        deferred_lighting_pass_depend_on_base_pass.dstStageMask =
-            RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        deferred_lighting_pass_depend_on_base_pass.srcAccessMask =
-            RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        deferred_lighting_pass_depend_on_base_pass.dstAccessMask =
-            RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-        deferred_lighting_pass_depend_on_base_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
+        deferred_lighting_pass_depend_on_base_pass.srcSubpass            = _main_camera_subpass_basepass;
+        deferred_lighting_pass_depend_on_base_pass.dstSubpass            = _main_camera_subpass_deferred_lighting;
+        deferred_lighting_pass_depend_on_base_pass.srcStageMask          = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;  
+        deferred_lighting_pass_depend_on_base_pass.dstStageMask          = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // 一一对应 FRAGMENT_SHADER_BIT 不用等COLOR_ATTACHMENT_OUTPUT_BIT
+        deferred_lighting_pass_depend_on_base_pass.srcAccessMask         = RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        deferred_lighting_pass_depend_on_base_pass.dstAccessMask         = RHI_ACCESS_SHADER_READ_BIT  | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        deferred_lighting_pass_depend_on_base_pass.dependencyFlags       = RHI_DEPENDENCY_BY_REGION_BIT;
 
         RHISubpassDependency& forward_lighting_pass_depend_on_deferred_lighting_pass = dependencies[2];
-        forward_lighting_pass_depend_on_deferred_lighting_pass.srcSubpass = _main_camera_subpass_deferred_lighting;
-        forward_lighting_pass_depend_on_deferred_lighting_pass.dstSubpass = _main_camera_subpass_forward_lighting;
-        forward_lighting_pass_depend_on_deferred_lighting_pass.srcStageMask =
-            RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        forward_lighting_pass_depend_on_deferred_lighting_pass.dstStageMask =
-            RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        forward_lighting_pass_depend_on_deferred_lighting_pass.srcAccessMask =
-            RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        forward_lighting_pass_depend_on_deferred_lighting_pass.dstAccessMask =
-            RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-        forward_lighting_pass_depend_on_deferred_lighting_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
+        forward_lighting_pass_depend_on_deferred_lighting_pass.srcSubpass            = _main_camera_subpass_deferred_lighting;
+        forward_lighting_pass_depend_on_deferred_lighting_pass.dstSubpass            = _main_camera_subpass_forward_lighting;
+        forward_lighting_pass_depend_on_deferred_lighting_pass.srcStageMask          = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        forward_lighting_pass_depend_on_deferred_lighting_pass.dstStageMask          = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        forward_lighting_pass_depend_on_deferred_lighting_pass.srcAccessMask         = RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        forward_lighting_pass_depend_on_deferred_lighting_pass.dstAccessMask         = RHI_ACCESS_SHADER_READ_BIT  | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        forward_lighting_pass_depend_on_deferred_lighting_pass.dependencyFlags       = RHI_DEPENDENCY_BY_REGION_BIT;
 
         RHISubpassDependency& tone_mapping_pass_depend_on_lighting_pass = dependencies[3];
-        tone_mapping_pass_depend_on_lighting_pass.srcSubpass           = _main_camera_subpass_forward_lighting;
-        tone_mapping_pass_depend_on_lighting_pass.dstSubpass           = _main_camera_subpass_tone_mapping;
-        tone_mapping_pass_depend_on_lighting_pass.srcStageMask =
-            RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        tone_mapping_pass_depend_on_lighting_pass.dstStageMask =
-            RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        tone_mapping_pass_depend_on_lighting_pass.srcAccessMask =
-            RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        tone_mapping_pass_depend_on_lighting_pass.dstAccessMask =
-            RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-        tone_mapping_pass_depend_on_lighting_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
+        tone_mapping_pass_depend_on_lighting_pass.srcSubpass            = _main_camera_subpass_forward_lighting;
+        tone_mapping_pass_depend_on_lighting_pass.dstSubpass            = _main_camera_subpass_tone_mapping;
+        tone_mapping_pass_depend_on_lighting_pass.srcStageMask          = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        tone_mapping_pass_depend_on_lighting_pass.dstStageMask          = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        tone_mapping_pass_depend_on_lighting_pass.srcAccessMask         = RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        tone_mapping_pass_depend_on_lighting_pass.dstAccessMask         = RHI_ACCESS_SHADER_READ_BIT  | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        tone_mapping_pass_depend_on_lighting_pass.dependencyFlags       = RHI_DEPENDENCY_BY_REGION_BIT;
 
         RHISubpassDependency& color_grading_pass_depend_on_tone_mapping_pass = dependencies[4];
-        color_grading_pass_depend_on_tone_mapping_pass.srcSubpass           = _main_camera_subpass_tone_mapping;
-        color_grading_pass_depend_on_tone_mapping_pass.dstSubpass           = _main_camera_subpass_color_grading;
-        color_grading_pass_depend_on_tone_mapping_pass.srcStageMask =
-            RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        color_grading_pass_depend_on_tone_mapping_pass.dstStageMask =
-            RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        color_grading_pass_depend_on_tone_mapping_pass.srcAccessMask =
-            RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        color_grading_pass_depend_on_tone_mapping_pass.dstAccessMask =
-            RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-        color_grading_pass_depend_on_tone_mapping_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
+        color_grading_pass_depend_on_tone_mapping_pass.srcSubpass            = _main_camera_subpass_tone_mapping;
+        color_grading_pass_depend_on_tone_mapping_pass.dstSubpass            = _main_camera_subpass_color_grading;
+        color_grading_pass_depend_on_tone_mapping_pass.srcStageMask          = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        color_grading_pass_depend_on_tone_mapping_pass.dstStageMask          = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        color_grading_pass_depend_on_tone_mapping_pass.srcAccessMask         = RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        color_grading_pass_depend_on_tone_mapping_pass.dstAccessMask         = RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        color_grading_pass_depend_on_tone_mapping_pass.dependencyFlags       = RHI_DEPENDENCY_BY_REGION_BIT;
 
         RHISubpassDependency& fxaa_pass_depend_on_color_grading_pass = dependencies[5];
-        fxaa_pass_depend_on_color_grading_pass.srcSubpass           = _main_camera_subpass_color_grading;
-        fxaa_pass_depend_on_color_grading_pass.dstSubpass           = _main_camera_subpass_fxaa;
-        fxaa_pass_depend_on_color_grading_pass.srcStageMask =
-            RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        fxaa_pass_depend_on_color_grading_pass.dstStageMask =
-            RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        fxaa_pass_depend_on_color_grading_pass.srcAccessMask =
-            RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        fxaa_pass_depend_on_color_grading_pass.dstAccessMask =
-            RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        fxaa_pass_depend_on_color_grading_pass.srcSubpass            = _main_camera_subpass_color_grading;
+        fxaa_pass_depend_on_color_grading_pass.dstSubpass            = _main_camera_subpass_fxaa;
+        fxaa_pass_depend_on_color_grading_pass.srcStageMask          = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        fxaa_pass_depend_on_color_grading_pass.dstStageMask          = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        fxaa_pass_depend_on_color_grading_pass.srcAccessMask         = RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        fxaa_pass_depend_on_color_grading_pass.dstAccessMask         = RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
 
         RHISubpassDependency& ui_pass_depend_on_fxaa_pass = dependencies[6];
-        ui_pass_depend_on_fxaa_pass.srcSubpass           = _main_camera_subpass_fxaa;
-        ui_pass_depend_on_fxaa_pass.dstSubpass           = _main_camera_subpass_ui;
-        ui_pass_depend_on_fxaa_pass.srcStageMask =
-            RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        ui_pass_depend_on_fxaa_pass.dstStageMask =
-            RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        ui_pass_depend_on_fxaa_pass.srcAccessMask   = RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        ui_pass_depend_on_fxaa_pass.dstAccessMask   = RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-        ui_pass_depend_on_fxaa_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
+        ui_pass_depend_on_fxaa_pass.srcSubpass            = _main_camera_subpass_fxaa;
+        ui_pass_depend_on_fxaa_pass.dstSubpass            = _main_camera_subpass_ui;
+        ui_pass_depend_on_fxaa_pass.srcStageMask          = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        ui_pass_depend_on_fxaa_pass.dstStageMask          = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        ui_pass_depend_on_fxaa_pass.srcAccessMask         = RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        ui_pass_depend_on_fxaa_pass.dstAccessMask         = RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        ui_pass_depend_on_fxaa_pass.dependencyFlags       = RHI_DEPENDENCY_BY_REGION_BIT;
 
         RHISubpassDependency& combine_ui_pass_depend_on_ui_pass = dependencies[7];
-        combine_ui_pass_depend_on_ui_pass.srcSubpass           = _main_camera_subpass_ui;
-        combine_ui_pass_depend_on_ui_pass.dstSubpass           = _main_camera_subpass_combine_ui;
-        combine_ui_pass_depend_on_ui_pass.srcStageMask =
-            RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        combine_ui_pass_depend_on_ui_pass.dstStageMask =
-            RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        combine_ui_pass_depend_on_ui_pass.srcAccessMask =
-            RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        combine_ui_pass_depend_on_ui_pass.dstAccessMask =
-            RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-        combine_ui_pass_depend_on_ui_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
+        combine_ui_pass_depend_on_ui_pass.srcSubpass            = _main_camera_subpass_ui;
+        combine_ui_pass_depend_on_ui_pass.dstSubpass            = _main_camera_subpass_combine_ui;
+        combine_ui_pass_depend_on_ui_pass.srcStageMask          = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        combine_ui_pass_depend_on_ui_pass.dstStageMask          = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        combine_ui_pass_depend_on_ui_pass.srcAccessMask         = RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        combine_ui_pass_depend_on_ui_pass.dstAccessMask         = RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        combine_ui_pass_depend_on_ui_pass.dependencyFlags       = RHI_DEPENDENCY_BY_REGION_BIT;
 
+        // Part4 准备 renderPass createInfo 并创建 renderPass
+        // 需要的是 attachment / SubpassDescription / SubpassDependency
+
+        // -------------------------------------------------------------------------------------------------------------
         RHIRenderPassCreateInfo renderpass_create_info {};
         renderpass_create_info.sType           = RHI_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         renderpass_create_info.attachmentCount = (sizeof(attachments) / sizeof(attachments[0]));
@@ -566,23 +552,25 @@ namespace Piccolo
         }
     }
 
+
     void MainCameraPass::setupDescriptorSetLayout()
     {
-        m_descriptor_infos.resize(_layout_type_count);
+        m_descriptor_infos.resize(_layout_type_count);   // 7 种不同的Layout
 
         {
             RHIDescriptorSetLayoutBinding mesh_mesh_layout_bindings[1];
 
+            // Binding 0
             RHIDescriptorSetLayoutBinding& mesh_mesh_layout_uniform_buffer_binding = mesh_mesh_layout_bindings[0];
-            mesh_mesh_layout_uniform_buffer_binding.binding                       = 0;
-            mesh_mesh_layout_uniform_buffer_binding.descriptorType                = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            mesh_mesh_layout_uniform_buffer_binding.descriptorCount               = 1;
-            mesh_mesh_layout_uniform_buffer_binding.stageFlags                    = RHI_SHADER_STAGE_VERTEX_BIT;
-            mesh_mesh_layout_uniform_buffer_binding.pImmutableSamplers            = NULL;
-
+            mesh_mesh_layout_uniform_buffer_binding.binding                        = 0;                                      // binding point
+            mesh_mesh_layout_uniform_buffer_binding.descriptorType                 = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER;     // binding的类型
+            mesh_mesh_layout_uniform_buffer_binding.descriptorCount                = 1;
+            mesh_mesh_layout_uniform_buffer_binding.stageFlags                     = RHI_SHADER_STAGE_VERTEX_BIT;            // shader阶段 这里会在Vertex阶段传入
+            mesh_mesh_layout_uniform_buffer_binding.pImmutableSamplers             = NULL;
+ 
             RHIDescriptorSetLayoutCreateInfo mesh_mesh_layout_create_info {};
             mesh_mesh_layout_create_info.sType        = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            mesh_mesh_layout_create_info.bindingCount = 1;
+            mesh_mesh_layout_create_info.bindingCount = 1;      
             mesh_mesh_layout_create_info.pBindings    = mesh_mesh_layout_bindings;
 
             if (m_rhi->createDescriptorSetLayout(&mesh_mesh_layout_create_info, m_descriptor_infos[_per_mesh].layout) != RHI_SUCCESS)
@@ -594,67 +582,61 @@ namespace Piccolo
         {
             RHIDescriptorSetLayoutBinding mesh_global_layout_bindings[8];
 
-            RHIDescriptorSetLayoutBinding& mesh_global_layout_perframe_storage_buffer_binding =
-                mesh_global_layout_bindings[0];
-            mesh_global_layout_perframe_storage_buffer_binding.binding = 0;
-            mesh_global_layout_perframe_storage_buffer_binding.descriptorType =
-                RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
-            mesh_global_layout_perframe_storage_buffer_binding.descriptorCount = 1;
-            mesh_global_layout_perframe_storage_buffer_binding.stageFlags =
-                RHI_SHADER_STAGE_VERTEX_BIT | RHI_SHADER_STAGE_FRAGMENT_BIT;
-            mesh_global_layout_perframe_storage_buffer_binding.pImmutableSamplers = NULL;
+            // Binding 0
+            RHIDescriptorSetLayoutBinding& mesh_global_layout_perframe_storage_buffer_binding = mesh_global_layout_bindings[0];
+            mesh_global_layout_perframe_storage_buffer_binding.binding                        = 0;
+            mesh_global_layout_perframe_storage_buffer_binding.descriptorType                 = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;     // dynamic 允许在使用过程种改动
+            mesh_global_layout_perframe_storage_buffer_binding.descriptorCount                = 1;
+            mesh_global_layout_perframe_storage_buffer_binding.stageFlags                     = RHI_SHADER_STAGE_VERTEX_BIT | RHI_SHADER_STAGE_FRAGMENT_BIT;
+            mesh_global_layout_perframe_storage_buffer_binding.pImmutableSamplers             = NULL;
 
-            RHIDescriptorSetLayoutBinding& mesh_global_layout_perdrawcall_storage_buffer_binding =
-                mesh_global_layout_bindings[1];
+            // Binding 1
+            RHIDescriptorSetLayoutBinding& mesh_global_layout_perdrawcall_storage_buffer_binding = mesh_global_layout_bindings[1];
             mesh_global_layout_perdrawcall_storage_buffer_binding.binding = 1;
-            mesh_global_layout_perdrawcall_storage_buffer_binding.descriptorType =
-                RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+            mesh_global_layout_perdrawcall_storage_buffer_binding.descriptorType = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
             mesh_global_layout_perdrawcall_storage_buffer_binding.descriptorCount    = 1;
             mesh_global_layout_perdrawcall_storage_buffer_binding.stageFlags         = RHI_SHADER_STAGE_VERTEX_BIT;
             mesh_global_layout_perdrawcall_storage_buffer_binding.pImmutableSamplers = NULL;
 
-            RHIDescriptorSetLayoutBinding& mesh_global_layout_per_drawcall_vertex_blending_storage_buffer_binding =
-                mesh_global_layout_bindings[2];
+            // Binding 2
+            RHIDescriptorSetLayoutBinding& mesh_global_layout_per_drawcall_vertex_blending_storage_buffer_binding = mesh_global_layout_bindings[2];
             mesh_global_layout_per_drawcall_vertex_blending_storage_buffer_binding.binding = 2;
-            mesh_global_layout_per_drawcall_vertex_blending_storage_buffer_binding.descriptorType =
-                RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+            mesh_global_layout_per_drawcall_vertex_blending_storage_buffer_binding.descriptorType = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
             mesh_global_layout_per_drawcall_vertex_blending_storage_buffer_binding.descriptorCount = 1;
-            mesh_global_layout_per_drawcall_vertex_blending_storage_buffer_binding.stageFlags =
-                RHI_SHADER_STAGE_VERTEX_BIT;
+            mesh_global_layout_per_drawcall_vertex_blending_storage_buffer_binding.stageFlags = RHI_SHADER_STAGE_VERTEX_BIT;
             mesh_global_layout_per_drawcall_vertex_blending_storage_buffer_binding.pImmutableSamplers = NULL;
 
+            // Binding 3
             RHIDescriptorSetLayoutBinding& mesh_global_layout_brdfLUT_texture_binding = mesh_global_layout_bindings[3];
             mesh_global_layout_brdfLUT_texture_binding.binding                       = 3;
-            mesh_global_layout_brdfLUT_texture_binding.descriptorType     = RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            mesh_global_layout_brdfLUT_texture_binding.descriptorType     = RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;   // 允许同时Bind一个image和一个sampler
             mesh_global_layout_brdfLUT_texture_binding.descriptorCount    = 1;
             mesh_global_layout_brdfLUT_texture_binding.stageFlags         = RHI_SHADER_STAGE_FRAGMENT_BIT;
             mesh_global_layout_brdfLUT_texture_binding.pImmutableSamplers = NULL;
 
-            RHIDescriptorSetLayoutBinding& mesh_global_layout_irradiance_texture_binding =
-                mesh_global_layout_bindings[4];
-            mesh_global_layout_irradiance_texture_binding         = mesh_global_layout_brdfLUT_texture_binding;
+            // Binding 4
+            RHIDescriptorSetLayoutBinding& mesh_global_layout_irradiance_texture_binding = mesh_global_layout_bindings[4];
+            mesh_global_layout_irradiance_texture_binding         = mesh_global_layout_brdfLUT_texture_binding;             // 同Binding 3
             mesh_global_layout_irradiance_texture_binding.binding = 4;
 
+            // Binding 5
             RHIDescriptorSetLayoutBinding& mesh_global_layout_specular_texture_binding = mesh_global_layout_bindings[5];
-            mesh_global_layout_specular_texture_binding         = mesh_global_layout_brdfLUT_texture_binding;
+            mesh_global_layout_specular_texture_binding         = mesh_global_layout_brdfLUT_texture_binding;               // 同Bingding 3
             mesh_global_layout_specular_texture_binding.binding = 5;
 
-            RHIDescriptorSetLayoutBinding& mesh_global_layout_point_light_shadow_texture_binding =
-                mesh_global_layout_bindings[6];
-            mesh_global_layout_point_light_shadow_texture_binding         = mesh_global_layout_brdfLUT_texture_binding;
+            RHIDescriptorSetLayoutBinding& mesh_global_layout_point_light_shadow_texture_binding = mesh_global_layout_bindings[6];
+            mesh_global_layout_point_light_shadow_texture_binding         = mesh_global_layout_brdfLUT_texture_binding;     // 同 Binding 3
             mesh_global_layout_point_light_shadow_texture_binding.binding = 6;
 
-            RHIDescriptorSetLayoutBinding& mesh_global_layout_directional_light_shadow_texture_binding =
-                mesh_global_layout_bindings[7];
-            mesh_global_layout_directional_light_shadow_texture_binding = mesh_global_layout_brdfLUT_texture_binding;
+            RHIDescriptorSetLayoutBinding& mesh_global_layout_directional_light_shadow_texture_binding = mesh_global_layout_bindings[7]; 
+            mesh_global_layout_directional_light_shadow_texture_binding = mesh_global_layout_brdfLUT_texture_binding;       // 同 Binding 3
             mesh_global_layout_directional_light_shadow_texture_binding.binding = 7;
 
             RHIDescriptorSetLayoutCreateInfo mesh_global_layout_create_info;
             mesh_global_layout_create_info.sType = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
             mesh_global_layout_create_info.pNext = NULL;
             mesh_global_layout_create_info.flags = 0;
-            mesh_global_layout_create_info.bindingCount =
-                (sizeof(mesh_global_layout_bindings) / sizeof(mesh_global_layout_bindings[0]));
+            mesh_global_layout_create_info.bindingCount = (sizeof(mesh_global_layout_bindings) / sizeof(mesh_global_layout_bindings[0]));
             mesh_global_layout_create_info.pBindings = mesh_global_layout_bindings;
 
             if (RHI_SUCCESS != m_rhi->createDescriptorSetLayout(&mesh_global_layout_create_info, m_descriptor_infos[_mesh_global].layout))
@@ -667,8 +649,7 @@ namespace Piccolo
             RHIDescriptorSetLayoutBinding mesh_material_layout_bindings[6];
 
             // (set = 2, binding = 0 in fragment shader)
-            RHIDescriptorSetLayoutBinding& mesh_material_layout_uniform_buffer_binding =
-                mesh_material_layout_bindings[0];
+            RHIDescriptorSetLayoutBinding& mesh_material_layout_uniform_buffer_binding = mesh_material_layout_bindings[0];
             mesh_material_layout_uniform_buffer_binding.binding            = 0;
             mesh_material_layout_uniform_buffer_binding.descriptorType     = RHI_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             mesh_material_layout_uniform_buffer_binding.descriptorCount    = 1;
@@ -676,8 +657,7 @@ namespace Piccolo
             mesh_material_layout_uniform_buffer_binding.pImmutableSamplers = nullptr;
 
             // (set = 2, binding = 1 in fragment shader)
-            RHIDescriptorSetLayoutBinding& mesh_material_layout_base_color_texture_binding =
-                mesh_material_layout_bindings[1];
+            RHIDescriptorSetLayoutBinding& mesh_material_layout_base_color_texture_binding = mesh_material_layout_bindings[1];
             mesh_material_layout_base_color_texture_binding.binding         = 1;
             mesh_material_layout_base_color_texture_binding.descriptorType  = RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             mesh_material_layout_base_color_texture_binding.descriptorCount = 1;
@@ -685,27 +665,23 @@ namespace Piccolo
             mesh_material_layout_base_color_texture_binding.pImmutableSamplers = nullptr;
 
             // (set = 2, binding = 2 in fragment shader)
-            RHIDescriptorSetLayoutBinding& mesh_material_layout_metallic_roughness_texture_binding =
-                mesh_material_layout_bindings[2];
-            mesh_material_layout_metallic_roughness_texture_binding = mesh_material_layout_base_color_texture_binding;
+            RHIDescriptorSetLayoutBinding& mesh_material_layout_metallic_roughness_texture_binding = mesh_material_layout_bindings[2];
+            mesh_material_layout_metallic_roughness_texture_binding = mesh_material_layout_base_color_texture_binding;   // 同Binding1
             mesh_material_layout_metallic_roughness_texture_binding.binding = 2;
 
             // (set = 2, binding = 3 in fragment shader)
-            RHIDescriptorSetLayoutBinding& mesh_material_layout_normal_roughness_texture_binding =
-                mesh_material_layout_bindings[3];
-            mesh_material_layout_normal_roughness_texture_binding = mesh_material_layout_base_color_texture_binding;
+            RHIDescriptorSetLayoutBinding& mesh_material_layout_normal_roughness_texture_binding = mesh_material_layout_bindings[3];
+            mesh_material_layout_normal_roughness_texture_binding = mesh_material_layout_base_color_texture_binding;     // 同Binding1
             mesh_material_layout_normal_roughness_texture_binding.binding = 3;
 
             // (set = 2, binding = 4 in fragment shader)
-            RHIDescriptorSetLayoutBinding& mesh_material_layout_occlusion_texture_binding =
-                mesh_material_layout_bindings[4];
-            mesh_material_layout_occlusion_texture_binding         = mesh_material_layout_base_color_texture_binding;
+            RHIDescriptorSetLayoutBinding& mesh_material_layout_occlusion_texture_binding = mesh_material_layout_bindings[4];
+            mesh_material_layout_occlusion_texture_binding         = mesh_material_layout_base_color_texture_binding;    // 同Binding1
             mesh_material_layout_occlusion_texture_binding.binding = 4;
 
             // (set = 2, binding = 5 in fragment shader)
-            RHIDescriptorSetLayoutBinding& mesh_material_layout_emissive_texture_binding =
-                mesh_material_layout_bindings[5];
-            mesh_material_layout_emissive_texture_binding         = mesh_material_layout_base_color_texture_binding;
+            RHIDescriptorSetLayoutBinding& mesh_material_layout_emissive_texture_binding = mesh_material_layout_bindings[5];
+            mesh_material_layout_emissive_texture_binding         = mesh_material_layout_base_color_texture_binding;     // 同Binding1
             mesh_material_layout_emissive_texture_binding.binding = 5;
 
             RHIDescriptorSetLayoutCreateInfo mesh_material_layout_create_info;
@@ -724,6 +700,7 @@ namespace Piccolo
         {
             RHIDescriptorSetLayoutBinding skybox_layout_bindings[2];
 
+            // binding = 1
             RHIDescriptorSetLayoutBinding& skybox_layout_perframe_storage_buffer_binding = skybox_layout_bindings[0];
             skybox_layout_perframe_storage_buffer_binding.binding                       = 0;
             skybox_layout_perframe_storage_buffer_binding.descriptorType  = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
@@ -731,6 +708,7 @@ namespace Piccolo
             skybox_layout_perframe_storage_buffer_binding.stageFlags      = RHI_SHADER_STAGE_VERTEX_BIT;
             skybox_layout_perframe_storage_buffer_binding.pImmutableSamplers = NULL;
 
+            // binding = 2
             RHIDescriptorSetLayoutBinding& skybox_layout_specular_texture_binding = skybox_layout_bindings[1];
             skybox_layout_specular_texture_binding.binding                       = 1;
             skybox_layout_specular_texture_binding.descriptorType     = RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -752,6 +730,7 @@ namespace Piccolo
         {
             RHIDescriptorSetLayoutBinding axis_layout_bindings[2];
 
+            // Binding = 0
             RHIDescriptorSetLayoutBinding& axis_layout_perframe_storage_buffer_binding = axis_layout_bindings[0];
             axis_layout_perframe_storage_buffer_binding.binding                       = 0;
             axis_layout_perframe_storage_buffer_binding.descriptorType     = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
@@ -759,6 +738,7 @@ namespace Piccolo
             axis_layout_perframe_storage_buffer_binding.stageFlags         = RHI_SHADER_STAGE_VERTEX_BIT;
             axis_layout_perframe_storage_buffer_binding.pImmutableSamplers = NULL;
 
+            // Binding = 1
             RHIDescriptorSetLayoutBinding& axis_layout_storage_buffer_binding = axis_layout_bindings[1];
             axis_layout_storage_buffer_binding.binding                       = 1;
             axis_layout_storage_buffer_binding.descriptorType                = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -780,32 +760,30 @@ namespace Piccolo
         {
             RHIDescriptorSetLayoutBinding gbuffer_lighting_global_layout_bindings[4];
 
-            RHIDescriptorSetLayoutBinding& gbuffer_normal_global_layout_input_attachment_binding =
-                gbuffer_lighting_global_layout_bindings[0];
+            // Binding 0
+            RHIDescriptorSetLayoutBinding& gbuffer_normal_global_layout_input_attachment_binding = gbuffer_lighting_global_layout_bindings[0];
             gbuffer_normal_global_layout_input_attachment_binding.binding         = 0;
             gbuffer_normal_global_layout_input_attachment_binding.descriptorType  = RHI_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
             gbuffer_normal_global_layout_input_attachment_binding.descriptorCount = 1;
             gbuffer_normal_global_layout_input_attachment_binding.stageFlags      = RHI_SHADER_STAGE_FRAGMENT_BIT;
 
+            // Binding 1
             RHIDescriptorSetLayoutBinding&
-                gbuffer_metallic_roughness_shadingmodeid_global_layout_input_attachment_binding =
-                    gbuffer_lighting_global_layout_bindings[1];
+            gbuffer_metallic_roughness_shadingmodeid_global_layout_input_attachment_binding = gbuffer_lighting_global_layout_bindings[1];
             gbuffer_metallic_roughness_shadingmodeid_global_layout_input_attachment_binding.binding = 1;
-            gbuffer_metallic_roughness_shadingmodeid_global_layout_input_attachment_binding.descriptorType =
-                RHI_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+            gbuffer_metallic_roughness_shadingmodeid_global_layout_input_attachment_binding.descriptorType = RHI_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
             gbuffer_metallic_roughness_shadingmodeid_global_layout_input_attachment_binding.descriptorCount = 1;
-            gbuffer_metallic_roughness_shadingmodeid_global_layout_input_attachment_binding.stageFlags =
-                RHI_SHADER_STAGE_FRAGMENT_BIT;
+            gbuffer_metallic_roughness_shadingmodeid_global_layout_input_attachment_binding.stageFlags = RHI_SHADER_STAGE_FRAGMENT_BIT;
 
-            RHIDescriptorSetLayoutBinding& gbuffer_albedo_global_layout_input_attachment_binding =
-                gbuffer_lighting_global_layout_bindings[2];
+            // Binding 2
+            RHIDescriptorSetLayoutBinding& gbuffer_albedo_global_layout_input_attachment_binding = gbuffer_lighting_global_layout_bindings[2];
             gbuffer_albedo_global_layout_input_attachment_binding.binding         = 2;
             gbuffer_albedo_global_layout_input_attachment_binding.descriptorType  = RHI_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
             gbuffer_albedo_global_layout_input_attachment_binding.descriptorCount = 1;
             gbuffer_albedo_global_layout_input_attachment_binding.stageFlags      = RHI_SHADER_STAGE_FRAGMENT_BIT;
 
-            RHIDescriptorSetLayoutBinding& gbuffer_depth_global_layout_input_attachment_binding =
-                gbuffer_lighting_global_layout_bindings[3];
+            // Binding 3
+            RHIDescriptorSetLayoutBinding& gbuffer_depth_global_layout_input_attachment_binding = gbuffer_lighting_global_layout_bindings[3];
             gbuffer_depth_global_layout_input_attachment_binding.binding         = 3;
             gbuffer_depth_global_layout_input_attachment_binding.descriptorType  = RHI_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
             gbuffer_depth_global_layout_input_attachment_binding.descriptorCount = 1;
@@ -815,8 +793,7 @@ namespace Piccolo
             gbuffer_lighting_global_layout_create_info.sType = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
             gbuffer_lighting_global_layout_create_info.pNext = NULL;
             gbuffer_lighting_global_layout_create_info.flags = 0;
-            gbuffer_lighting_global_layout_create_info.bindingCount =
-                sizeof(gbuffer_lighting_global_layout_bindings) / sizeof(gbuffer_lighting_global_layout_bindings[0]);
+            gbuffer_lighting_global_layout_create_info.bindingCount = sizeof(gbuffer_lighting_global_layout_bindings) / sizeof(gbuffer_lighting_global_layout_bindings[0]);
             gbuffer_lighting_global_layout_create_info.pBindings = gbuffer_lighting_global_layout_bindings;
 
             if (RHI_SUCCESS != m_rhi->createDescriptorSetLayout(&gbuffer_lighting_global_layout_create_info, m_descriptor_infos[_deferred_lighting].layout))
@@ -828,13 +805,14 @@ namespace Piccolo
 
     void MainCameraPass::setupPipelines()
     {
-        m_render_pipelines.resize(_render_pipeline_type_count);
+        m_render_pipelines.resize(_render_pipeline_type_count);     // 6种pipeline
 
-        // mesh gbuffer
+        // pipeline 01 : mesh gbuffer
         {
+            // 根据 DescriptorSetLayout 来创建PipelineLayout
             RHIDescriptorSetLayout*      descriptorset_layouts[3] = {m_descriptor_infos[_mesh_global].layout,
-                                                              m_descriptor_infos[_per_mesh].layout,
-                                                              m_descriptor_infos[_mesh_per_material].layout};
+                                                                     m_descriptor_infos[_per_mesh].layout,
+                                                                     m_descriptor_infos[_mesh_per_material].layout};
             RHIPipelineLayoutCreateInfo pipeline_layout_create_info {};
             pipeline_layout_create_info.sType          = RHI_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             pipeline_layout_create_info.setLayoutCount = 3;
@@ -845,6 +823,7 @@ namespace Piccolo
                 throw std::runtime_error("create mesh gbuffer pipeline layout");
             }
 
+            // 设置 Shader
             RHIShader* vert_shader_module = m_rhi->createShaderModule(MESH_VERT);
             RHIShader* frag_shader_module = m_rhi->createShaderModule(MESH_GBUFFER_FRAG);
 
