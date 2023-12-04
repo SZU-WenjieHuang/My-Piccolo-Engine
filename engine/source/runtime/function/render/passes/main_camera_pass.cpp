@@ -824,9 +824,10 @@ namespace Piccolo
             }
 
             // 设置 Shader
-            RHIShader* vert_shader_module = m_rhi->createShaderModule(MESH_VERT);
+            RHIShader* vert_shader_module = m_rhi->createShaderModule(MESH_VERT);                   //以vector<char>的形式传入
             RHIShader* frag_shader_module = m_rhi->createShaderModule(MESH_GBUFFER_FRAG);
 
+            // pipeline shader stage
             RHIPipelineShaderStageCreateInfo vert_pipeline_shader_stage_create_info {};
             vert_pipeline_shader_stage_create_info.sType  = RHI_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
             vert_pipeline_shader_stage_create_info.stage  = RHI_SHADER_STAGE_VERTEX_BIT;
@@ -842,6 +843,7 @@ namespace Piccolo
             RHIPipelineShaderStageCreateInfo shader_stages[] = {vert_pipeline_shader_stage_create_info,
                                                                frag_pipeline_shader_stage_create_info};
 
+            // 设置 Vertex Input 的 Binding 和 Attribute
             auto                                 vertex_binding_descriptions   = MeshVertex::getBindingDescriptions();
             auto                                 vertex_attribute_descriptions = MeshVertex::getAttributeDescriptions();
             RHIPipelineVertexInputStateCreateInfo vertex_input_state_create_info {};
@@ -851,36 +853,41 @@ namespace Piccolo
             vertex_input_state_create_info.vertexAttributeDescriptionCount = vertex_attribute_descriptions.size();
             vertex_input_state_create_info.pVertexAttributeDescriptions    = &vertex_attribute_descriptions[0];
 
+            // 图元组装相关的
             RHIPipelineInputAssemblyStateCreateInfo input_assembly_create_info {};
             input_assembly_create_info.sType    = RHI_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-            input_assembly_create_info.topology = RHI_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            input_assembly_create_info.topology = RHI_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  // triangle_list 作为图元拓扑的格式
             input_assembly_create_info.primitiveRestartEnable = RHI_FALSE;
 
+            // 设置ViewPortState
             RHIPipelineViewportStateCreateInfo viewport_state_create_info {};
             viewport_state_create_info.sType         = RHI_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
             viewport_state_create_info.viewportCount = 1;
             viewport_state_create_info.pViewports    = m_rhi->getSwapchainInfo().viewport;
             viewport_state_create_info.scissorCount  = 1;
-            viewport_state_create_info.pScissors     = m_rhi->getSwapchainInfo().scissor;
+            viewport_state_create_info.pScissors     = m_rhi->getSwapchainInfo().scissor;   // 裁剪数据
 
+            // 设置光栅化的信息
             RHIPipelineRasterizationStateCreateInfo rasterization_state_create_info {};
             rasterization_state_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
             rasterization_state_create_info.depthClampEnable        = RHI_FALSE;
             rasterization_state_create_info.rasterizerDiscardEnable = RHI_FALSE;
-            rasterization_state_create_info.polygonMode             = RHI_POLYGON_MODE_FILL;
+            rasterization_state_create_info.polygonMode             = RHI_POLYGON_MODE_FILL;     // 填充模式
             rasterization_state_create_info.lineWidth               = 1.0f;
-            rasterization_state_create_info.cullMode                = RHI_CULL_MODE_BACK_BIT;
-            rasterization_state_create_info.frontFace               = RHI_FRONT_FACE_COUNTER_CLOCKWISE;
-            rasterization_state_create_info.depthBiasEnable         = RHI_FALSE;
+            rasterization_state_create_info.cullMode                = RHI_CULL_MODE_BACK_BIT;    // 背面剔除
+            rasterization_state_create_info.frontFace               = RHI_FRONT_FACE_COUNTER_CLOCKWISE;   // 正面方向 为逆时针
+            rasterization_state_create_info.depthBiasEnable         = RHI_FALSE;   
             rasterization_state_create_info.depthBiasConstantFactor = 0.0f;
             rasterization_state_create_info.depthBiasClamp          = 0.0f;
             rasterization_state_create_info.depthBiasSlopeFactor    = 0.0f;
 
+            // 设置MultiSample
             RHIPipelineMultisampleStateCreateInfo multisample_state_create_info {};
             multisample_state_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
             multisample_state_create_info.sampleShadingEnable  = RHI_FALSE;
-            multisample_state_create_info.rasterizationSamples = RHI_SAMPLE_COUNT_1_BIT;
+            multisample_state_create_info.rasterizationSamples = RHI_SAMPLE_COUNT_1_BIT;   //  multi sample的次数 8次or4次
 
+            // 设置color Blending 可以允许在frame buffer种新写入的颜色可以直接覆盖上一个颜色
             RHIPipelineColorBlendAttachmentState color_blend_attachments[3] = {};
             color_blend_attachments[0].colorWriteMask = RHI_COLOR_COMPONENT_R_BIT | RHI_COLOR_COMPONENT_G_BIT |
                                                         RHI_COLOR_COMPONENT_B_BIT | RHI_COLOR_COMPONENT_A_BIT;
@@ -891,6 +898,7 @@ namespace Piccolo
             color_blend_attachments[0].srcAlphaBlendFactor = RHI_BLEND_FACTOR_ONE;
             color_blend_attachments[0].dstAlphaBlendFactor = RHI_BLEND_FACTOR_ZERO;
             color_blend_attachments[0].alphaBlendOp        = RHI_BLEND_OP_ADD;
+
             color_blend_attachments[1].colorWriteMask      = RHI_COLOR_COMPONENT_R_BIT | RHI_COLOR_COMPONENT_G_BIT |
                                                              RHI_COLOR_COMPONENT_B_BIT | RHI_COLOR_COMPONENT_A_BIT;
             color_blend_attachments[1].blendEnable         = RHI_FALSE;
@@ -900,6 +908,7 @@ namespace Piccolo
             color_blend_attachments[1].srcAlphaBlendFactor = RHI_BLEND_FACTOR_ONE;
             color_blend_attachments[1].dstAlphaBlendFactor = RHI_BLEND_FACTOR_ZERO;
             color_blend_attachments[1].alphaBlendOp        = RHI_BLEND_OP_ADD;
+
             color_blend_attachments[2].colorWriteMask      = RHI_COLOR_COMPONENT_R_BIT | RHI_COLOR_COMPONENT_G_BIT |
                                                              RHI_COLOR_COMPONENT_B_BIT | RHI_COLOR_COMPONENT_A_BIT;
             color_blend_attachments[2].blendEnable         = RHI_FALSE;
@@ -914,28 +923,30 @@ namespace Piccolo
             color_blend_state_create_info.sType         = RHI_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
             color_blend_state_create_info.logicOpEnable = RHI_FALSE;
             color_blend_state_create_info.logicOp       = RHI_LOGIC_OP_COPY;
-            color_blend_state_create_info.attachmentCount =
-                sizeof(color_blend_attachments) / sizeof(color_blend_attachments[0]);
+            color_blend_state_create_info.attachmentCount = sizeof(color_blend_attachments) / sizeof(color_blend_attachments[0]);
             color_blend_state_create_info.pAttachments      = &color_blend_attachments[0];
-            color_blend_state_create_info.blendConstants[0] = 0.0f;
+            color_blend_state_create_info.blendConstants[0] = 0.0f;  // 混合因子都=0 代表不使用color blending
             color_blend_state_create_info.blendConstants[1] = 0.0f;
             color_blend_state_create_info.blendConstants[2] = 0.0f;
             color_blend_state_create_info.blendConstants[3] = 0.0f;
 
+            // 设置深度测试和模板测试
             RHIPipelineDepthStencilStateCreateInfo depth_stencil_create_info {};
             depth_stencil_create_info.sType            = RHI_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
             depth_stencil_create_info.depthTestEnable  = RHI_TRUE;
             depth_stencil_create_info.depthWriteEnable = RHI_TRUE;
-            depth_stencil_create_info.depthCompareOp   = RHI_COMPARE_OP_LESS;
+            depth_stencil_create_info.depthCompareOp   = RHI_COMPARE_OP_LESS;   // 深度浅的通过
             depth_stencil_create_info.depthBoundsTestEnable = RHI_FALSE;
             depth_stencil_create_info.stencilTestEnable     = RHI_FALSE;
 
+            // 设置会动态改变的范围：viewport + scissor
             RHIDynamicState                   dynamic_states[] = {RHI_DYNAMIC_STATE_VIEWPORT, RHI_DYNAMIC_STATE_SCISSOR};
             RHIPipelineDynamicStateCreateInfo dynamic_state_create_info {};
             dynamic_state_create_info.sType             = RHI_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
             dynamic_state_create_info.dynamicStateCount = 2;
             dynamic_state_create_info.pDynamicStates    = dynamic_states;
 
+            // 创建Pipeline
             RHIGraphicsPipelineCreateInfo pipelineInfo {};
             pipelineInfo.sType               = RHI_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
             pipelineInfo.stageCount          = 2;
@@ -965,15 +976,15 @@ namespace Piccolo
             m_rhi->destroyShaderModule(frag_shader_module);
         }
 
-        // deferred lighting
-        {
+        // 02 deferred lighting 的pipeline
+        {   
+            // 根据三个descriptor Layout创建pipelineLayout
             RHIDescriptorSetLayout*      descriptorset_layouts[3] = {m_descriptor_infos[_mesh_global].layout,
-                                                              m_descriptor_infos[_deferred_lighting].layout,
-                                                              m_descriptor_infos[_skybox].layout};
+                                                                     m_descriptor_infos[_deferred_lighting].layout,
+                                                                     m_descriptor_infos[_skybox].layout};
             RHIPipelineLayoutCreateInfo pipeline_layout_create_info {};
             pipeline_layout_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-            pipeline_layout_create_info.setLayoutCount =
-                sizeof(descriptorset_layouts) / sizeof(descriptorset_layouts[0]);
+            pipeline_layout_create_info.setLayoutCount = sizeof(descriptorset_layouts) / sizeof(descriptorset_layouts[0]);
             pipeline_layout_create_info.pSetLayouts = descriptorset_layouts;
 
             if (RHI_SUCCESS != m_rhi->createPipelineLayout(&pipeline_layout_create_info,
@@ -982,9 +993,11 @@ namespace Piccolo
                 throw std::runtime_error("create deferred lighting pipeline layout");
             }
 
+            // Shader
             RHIShader* vert_shader_module = m_rhi->createShaderModule(DEFERRED_LIGHTING_VERT);
             RHIShader* frag_shader_module = m_rhi->createShaderModule(DEFERRED_LIGHTING_FRAG);
 
+            // Shader Stage
             RHIPipelineShaderStageCreateInfo vert_pipeline_shader_stage_create_info {};
             vert_pipeline_shader_stage_create_info.sType  = RHI_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
             vert_pipeline_shader_stage_create_info.stage  = RHI_SHADER_STAGE_VERTEX_BIT;
@@ -1001,6 +1014,7 @@ namespace Piccolo
             RHIPipelineShaderStageCreateInfo shader_stages[] = {vert_pipeline_shader_stage_create_info,
                                                                frag_pipeline_shader_stage_create_info};
 
+            // VertexInput State
             auto                                 vertex_binding_descriptions   = MeshVertex::getBindingDescriptions();
             auto                                 vertex_attribute_descriptions = MeshVertex::getAttributeDescriptions();
             RHIPipelineVertexInputStateCreateInfo vertex_input_state_create_info {};
@@ -1010,11 +1024,13 @@ namespace Piccolo
             vertex_input_state_create_info.vertexBindingDescriptionCount = 0;
             vertex_input_state_create_info.pVertexAttributeDescriptions  = NULL;
 
+            // InputAssembly
             RHIPipelineInputAssemblyStateCreateInfo input_assembly_create_info {};
             input_assembly_create_info.sType    = RHI_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
             input_assembly_create_info.topology = RHI_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
             input_assembly_create_info.primitiveRestartEnable = RHI_FALSE;
 
+            // ViewPort
             RHIPipelineViewportStateCreateInfo viewport_state_create_info {};
             viewport_state_create_info.sType         = RHI_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
             viewport_state_create_info.viewportCount = 1;
@@ -1022,6 +1038,7 @@ namespace Piccolo
             viewport_state_create_info.scissorCount  = 1;
             viewport_state_create_info.pScissors     = m_rhi->getSwapchainInfo().scissor;
 
+            // Rasterization
             RHIPipelineRasterizationStateCreateInfo rasterization_state_create_info {};
             rasterization_state_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
             rasterization_state_create_info.depthClampEnable        = RHI_FALSE;
@@ -1035,11 +1052,13 @@ namespace Piccolo
             rasterization_state_create_info.depthBiasClamp          = 0.0f;
             rasterization_state_create_info.depthBiasSlopeFactor    = 0.0f;
 
+            // MultiSample
             RHIPipelineMultisampleStateCreateInfo multisample_state_create_info {};
             multisample_state_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
             multisample_state_create_info.sampleShadingEnable  = RHI_FALSE;
             multisample_state_create_info.rasterizationSamples = RHI_SAMPLE_COUNT_1_BIT;
 
+            // ColorBlending
             RHIPipelineColorBlendAttachmentState color_blend_attachments[1] = {};
             color_blend_attachments[0].colorWriteMask = RHI_COLOR_COMPONENT_R_BIT | RHI_COLOR_COMPONENT_G_BIT |
                                                         RHI_COLOR_COMPONENT_B_BIT | RHI_COLOR_COMPONENT_A_BIT;
@@ -1063,6 +1082,7 @@ namespace Piccolo
             color_blend_state_create_info.blendConstants[2] = 0.0f;
             color_blend_state_create_info.blendConstants[3] = 0.0f;
 
+            // Depth + Stencil
             RHIPipelineDepthStencilStateCreateInfo depth_stencil_create_info {};
             depth_stencil_create_info.sType            = RHI_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
             depth_stencil_create_info.depthTestEnable  = RHI_FALSE;
@@ -1071,12 +1091,14 @@ namespace Piccolo
             depth_stencil_create_info.depthBoundsTestEnable = RHI_FALSE;
             depth_stencil_create_info.stencilTestEnable     = RHI_FALSE;
 
+            // Dynamic State
             RHIDynamicState                   dynamic_states[] = {RHI_DYNAMIC_STATE_VIEWPORT, RHI_DYNAMIC_STATE_SCISSOR};
             RHIPipelineDynamicStateCreateInfo dynamic_state_create_info {};
             dynamic_state_create_info.sType             = RHI_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
             dynamic_state_create_info.dynamicStateCount = 2;
             dynamic_state_create_info.pDynamicStates    = dynamic_states;
 
+            // Create Pipeline
             RHIGraphicsPipelineCreateInfo pipelineInfo {};
             pipelineInfo.sType               = RHI_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
             pipelineInfo.stageCount          = 2;
@@ -1106,8 +1128,9 @@ namespace Piccolo
             m_rhi->destroyShaderModule(frag_shader_module);
         }
 
-        // mesh lighting
+        // 03 mesh lighting
         {
+            // set pipelineLayout
             RHIDescriptorSetLayout*      descriptorset_layouts[3] = {m_descriptor_infos[_mesh_global].layout,
                                                                      m_descriptor_infos[_per_mesh].layout,
                                                                      m_descriptor_infos[_mesh_per_material].layout};
@@ -1121,9 +1144,11 @@ namespace Piccolo
                 throw std::runtime_error("create mesh lighting pipeline layout");
             }
 
+            // shader
             RHIShader* vert_shader_module = m_rhi->createShaderModule(MESH_VERT);
             RHIShader* frag_shader_module = m_rhi->createShaderModule(MESH_FRAG);
 
+            // Shader Stage
             RHIPipelineShaderStageCreateInfo vert_pipeline_shader_stage_create_info {};
             vert_pipeline_shader_stage_create_info.sType  = RHI_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
             vert_pipeline_shader_stage_create_info.stage  = RHI_SHADER_STAGE_VERTEX_BIT;
@@ -1139,6 +1164,7 @@ namespace Piccolo
             RHIPipelineShaderStageCreateInfo shader_stages[] = {vert_pipeline_shader_stage_create_info,
                                                                frag_pipeline_shader_stage_create_info};
 
+            // Vertex Input
             auto                                 vertex_binding_descriptions   = MeshVertex::getBindingDescriptions();
             auto                                 vertex_attribute_descriptions = MeshVertex::getAttributeDescriptions();
             RHIPipelineVertexInputStateCreateInfo vertex_input_state_create_info {};
@@ -1148,11 +1174,13 @@ namespace Piccolo
             vertex_input_state_create_info.vertexAttributeDescriptionCount = vertex_attribute_descriptions.size();
             vertex_input_state_create_info.pVertexAttributeDescriptions    = &vertex_attribute_descriptions[0];
 
+            // Input Assembly
             RHIPipelineInputAssemblyStateCreateInfo input_assembly_create_info {};
             input_assembly_create_info.sType    = RHI_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
             input_assembly_create_info.topology = RHI_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
             input_assembly_create_info.primitiveRestartEnable = RHI_FALSE;
 
+            // viewport
             RHIPipelineViewportStateCreateInfo viewport_state_create_info {};
             viewport_state_create_info.sType         = RHI_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
             viewport_state_create_info.viewportCount = 1;
@@ -1160,6 +1188,7 @@ namespace Piccolo
             viewport_state_create_info.scissorCount  = 1;
             viewport_state_create_info.pScissors     = m_rhi->getSwapchainInfo().scissor;
 
+            // Rasterization
             RHIPipelineRasterizationStateCreateInfo rasterization_state_create_info {};
             rasterization_state_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
             rasterization_state_create_info.depthClampEnable        = RHI_FALSE;
@@ -1173,11 +1202,13 @@ namespace Piccolo
             rasterization_state_create_info.depthBiasClamp          = 0.0f;
             rasterization_state_create_info.depthBiasSlopeFactor    = 0.0f;
 
+            // MultiSample
             RHIPipelineMultisampleStateCreateInfo multisample_state_create_info {};
             multisample_state_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
             multisample_state_create_info.sampleShadingEnable  = RHI_FALSE;
             multisample_state_create_info.rasterizationSamples = RHI_SAMPLE_COUNT_1_BIT;
 
+            // ColorBlending
             RHIPipelineColorBlendAttachmentState color_blend_attachments[1] = {};
             color_blend_attachments[0].colorWriteMask = RHI_COLOR_COMPONENT_R_BIT | RHI_COLOR_COMPONENT_G_BIT |
                                                         RHI_COLOR_COMPONENT_B_BIT | RHI_COLOR_COMPONENT_A_BIT;
@@ -1201,6 +1232,7 @@ namespace Piccolo
             color_blend_state_create_info.blendConstants[2] = 0.0f;
             color_blend_state_create_info.blendConstants[3] = 0.0f;
 
+            // depth + stencil
             RHIPipelineDepthStencilStateCreateInfo depth_stencil_create_info {};
             depth_stencil_create_info.sType            = RHI_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
             depth_stencil_create_info.depthTestEnable  = RHI_TRUE;
@@ -1209,12 +1241,14 @@ namespace Piccolo
             depth_stencil_create_info.depthBoundsTestEnable = RHI_FALSE;
             depth_stencil_create_info.stencilTestEnable     = RHI_FALSE;
 
+            // dynamic
             RHIDynamicState                   dynamic_states[] = {RHI_DYNAMIC_STATE_VIEWPORT, RHI_DYNAMIC_STATE_SCISSOR};
             RHIPipelineDynamicStateCreateInfo dynamic_state_create_info {};
             dynamic_state_create_info.sType             = RHI_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
             dynamic_state_create_info.dynamicStateCount = 2;
             dynamic_state_create_info.pDynamicStates    = dynamic_states;
 
+            // create pipeline
             RHIGraphicsPipelineCreateInfo pipelineInfo {};
             pipelineInfo.sType               = RHI_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
             pipelineInfo.stageCount          = 2;
@@ -1245,8 +1279,9 @@ namespace Piccolo
             m_rhi->destroyShaderModule(frag_shader_module);
         }
 
-        // skybox
+        // 04 skybox
         {
+            // PipelineLayout
             RHIDescriptorSetLayout*      descriptorset_layouts[1] = {m_descriptor_infos[_skybox].layout};
             RHIPipelineLayoutCreateInfo pipeline_layout_create_info {};
             pipeline_layout_create_info.sType          = RHI_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -1258,9 +1293,11 @@ namespace Piccolo
                 throw std::runtime_error("create skybox pipeline layout");
             }
 
+            // Shader
             RHIShader* vert_shader_module = m_rhi->createShaderModule(SKYBOX_VERT);
             RHIShader* frag_shader_module = m_rhi->createShaderModule(SKYBOX_FRAG);
 
+            // Shader Stage
             RHIPipelineShaderStageCreateInfo vert_pipeline_shader_stage_create_info {};
             vert_pipeline_shader_stage_create_info.sType  = RHI_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
             vert_pipeline_shader_stage_create_info.stage  = RHI_SHADER_STAGE_VERTEX_BIT;
@@ -1277,6 +1314,7 @@ namespace Piccolo
             RHIPipelineShaderStageCreateInfo shader_stages[] = {vert_pipeline_shader_stage_create_info,
                                                                frag_pipeline_shader_stage_create_info};
 
+            // VertexInput
             auto                                 vertex_binding_descriptions   = MeshVertex::getBindingDescriptions();
             auto                                 vertex_attribute_descriptions = MeshVertex::getAttributeDescriptions();
             RHIPipelineVertexInputStateCreateInfo vertex_input_state_create_info {};
@@ -1286,11 +1324,13 @@ namespace Piccolo
             vertex_input_state_create_info.vertexAttributeDescriptionCount = 0;
             vertex_input_state_create_info.pVertexAttributeDescriptions    = NULL;
 
+            // InputAssembly
             RHIPipelineInputAssemblyStateCreateInfo input_assembly_create_info {};
             input_assembly_create_info.sType    = RHI_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
             input_assembly_create_info.topology = RHI_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
             input_assembly_create_info.primitiveRestartEnable = RHI_FALSE;
 
+            // Viewport
             RHIPipelineViewportStateCreateInfo viewport_state_create_info {};
             viewport_state_create_info.sType         = RHI_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
             viewport_state_create_info.viewportCount = 1;
@@ -1298,6 +1338,7 @@ namespace Piccolo
             viewport_state_create_info.scissorCount  = 1;
             viewport_state_create_info.pScissors     = m_rhi->getSwapchainInfo().scissor;
 
+            // Rasterization
             RHIPipelineRasterizationStateCreateInfo rasterization_state_create_info {};
             rasterization_state_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
             rasterization_state_create_info.depthClampEnable        = RHI_FALSE;
@@ -1311,11 +1352,13 @@ namespace Piccolo
             rasterization_state_create_info.depthBiasClamp          = 0.0f;
             rasterization_state_create_info.depthBiasSlopeFactor    = 0.0f;
 
+            // multiSample
             RHIPipelineMultisampleStateCreateInfo multisample_state_create_info {};
             multisample_state_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
             multisample_state_create_info.sampleShadingEnable  = RHI_FALSE;
             multisample_state_create_info.rasterizationSamples = RHI_SAMPLE_COUNT_1_BIT;
 
+            // color Blend
             RHIPipelineColorBlendAttachmentState color_blend_attachments[1] = {};
             color_blend_attachments[0].colorWriteMask = RHI_COLOR_COMPONENT_R_BIT | RHI_COLOR_COMPONENT_G_BIT |
                                                         RHI_COLOR_COMPONENT_B_BIT | RHI_COLOR_COMPONENT_A_BIT;
@@ -1339,20 +1382,23 @@ namespace Piccolo
             color_blend_state_create_info.blendConstants[2] = 0.0f;
             color_blend_state_create_info.blendConstants[3] = 0.0f;
 
+            // Depth
             RHIPipelineDepthStencilStateCreateInfo depth_stencil_create_info {};
             depth_stencil_create_info.sType            = RHI_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-            depth_stencil_create_info.depthTestEnable  = RHI_TRUE;
+            depth_stencil_create_info.depthTestEnable  = RHI_TRUE;          // skybox 讲道理要禁用Depth Test maybe后续会调整
             depth_stencil_create_info.depthWriteEnable = RHI_TRUE;
             depth_stencil_create_info.depthCompareOp   = RHI_COMPARE_OP_LESS;
             depth_stencil_create_info.depthBoundsTestEnable = RHI_FALSE;
             depth_stencil_create_info.stencilTestEnable     = RHI_FALSE;
 
+            // Dynamic
             RHIDynamicState                   dynamic_states[] = {RHI_DYNAMIC_STATE_VIEWPORT, RHI_DYNAMIC_STATE_SCISSOR};
             RHIPipelineDynamicStateCreateInfo dynamic_state_create_info {};
             dynamic_state_create_info.sType             = RHI_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
             dynamic_state_create_info.dynamicStateCount = 2;
             dynamic_state_create_info.pDynamicStates    = dynamic_states;
 
+            // Create Pipeline
             RHIGraphicsPipelineCreateInfo pipelineInfo {};
             pipelineInfo.sType               = RHI_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
             pipelineInfo.stageCount          = 2;
@@ -1382,8 +1428,9 @@ namespace Piccolo
             m_rhi->destroyShaderModule(frag_shader_module);
         }
 
-        // draw axis
+        // 05 draw axis
         {
+            // pipeline Layout
             RHIDescriptorSetLayout*     descriptorset_layouts[1] = {m_descriptor_infos[_axis].layout};
             RHIPipelineLayoutCreateInfo pipeline_layout_create_info {};
             pipeline_layout_create_info.sType          = RHI_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -1395,15 +1442,17 @@ namespace Piccolo
                 throw std::runtime_error("create axis pipeline layout");
             }
 
+            // shader
             RHIShader* vert_shader_module = m_rhi->createShaderModule(AXIS_VERT);
             RHIShader* frag_shader_module = m_rhi->createShaderModule(AXIS_FRAG);
 
+            // shader stage
             RHIPipelineShaderStageCreateInfo vert_pipeline_shader_stage_create_info {};
             vert_pipeline_shader_stage_create_info.sType  = RHI_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
             vert_pipeline_shader_stage_create_info.stage  = RHI_SHADER_STAGE_VERTEX_BIT;
             vert_pipeline_shader_stage_create_info.module = vert_shader_module;
             vert_pipeline_shader_stage_create_info.pName  = "main";
-            // vert_pipeline_shader_stage_create_info.pSpecializationInfo
+            // vert_pipeline_shader_stage_create_info.pSpecializationInfo   // 允许编译的时候特化一些常量值
 
             RHIPipelineShaderStageCreateInfo frag_pipeline_shader_stage_create_info {};
             frag_pipeline_shader_stage_create_info.sType  = RHI_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -1413,7 +1462,7 @@ namespace Piccolo
 
             RHIPipelineShaderStageCreateInfo shader_stages[] = {vert_pipeline_shader_stage_create_info,
                                                                frag_pipeline_shader_stage_create_info};
-
+            // Vertex Input Stage
             auto                                 vertex_binding_descriptions   = MeshVertex::getBindingDescriptions();
             auto                                 vertex_attribute_descriptions = MeshVertex::getAttributeDescriptions();
             RHIPipelineVertexInputStateCreateInfo vertex_input_state_create_info {};
@@ -1423,11 +1472,13 @@ namespace Piccolo
             vertex_input_state_create_info.vertexAttributeDescriptionCount = vertex_attribute_descriptions.size();
             vertex_input_state_create_info.pVertexAttributeDescriptions    = &vertex_attribute_descriptions[0];
 
+            // Input Assembly
             RHIPipelineInputAssemblyStateCreateInfo input_assembly_create_info {};
             input_assembly_create_info.sType    = RHI_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
             input_assembly_create_info.topology = RHI_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
             input_assembly_create_info.primitiveRestartEnable = RHI_FALSE;
 
+            // Viewport
             RHIPipelineViewportStateCreateInfo viewport_state_create_info {};
             viewport_state_create_info.sType         = RHI_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
             viewport_state_create_info.viewportCount = 1;
@@ -1435,6 +1486,7 @@ namespace Piccolo
             viewport_state_create_info.scissorCount  = 1;
             viewport_state_create_info.pScissors     = m_rhi->getSwapchainInfo().scissor;
 
+            // Rasterization
             RHIPipelineRasterizationStateCreateInfo rasterization_state_create_info {};
             rasterization_state_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
             rasterization_state_create_info.depthClampEnable        = RHI_FALSE;
@@ -1448,11 +1500,13 @@ namespace Piccolo
             rasterization_state_create_info.depthBiasClamp          = 0.0f;
             rasterization_state_create_info.depthBiasSlopeFactor    = 0.0f;
 
+            // MultiSample
             RHIPipelineMultisampleStateCreateInfo multisample_state_create_info {};
             multisample_state_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
             multisample_state_create_info.sampleShadingEnable  = RHI_FALSE;
             multisample_state_create_info.rasterizationSamples = RHI_SAMPLE_COUNT_1_BIT;
 
+            // Color
             RHIPipelineColorBlendAttachmentState color_blend_attachment_state {};
             color_blend_attachment_state.colorWriteMask = RHI_COLOR_COMPONENT_R_BIT | RHI_COLOR_COMPONENT_G_BIT |
                                                           RHI_COLOR_COMPONENT_B_BIT | RHI_COLOR_COMPONENT_A_BIT;
@@ -1475,6 +1529,7 @@ namespace Piccolo
             color_blend_state_create_info.blendConstants[2] = 0.0f;
             color_blend_state_create_info.blendConstants[3] = 0.0f;
 
+            // Depth + stencil
             RHIPipelineDepthStencilStateCreateInfo depth_stencil_create_info {};
             depth_stencil_create_info.sType            = RHI_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
             depth_stencil_create_info.depthTestEnable  = RHI_FALSE;
@@ -1483,12 +1538,14 @@ namespace Piccolo
             depth_stencil_create_info.depthBoundsTestEnable = RHI_FALSE;
             depth_stencil_create_info.stencilTestEnable     = RHI_FALSE;
 
+            // Dynamic
             RHIDynamicState                   dynamic_states[] = {RHI_DYNAMIC_STATE_VIEWPORT, RHI_DYNAMIC_STATE_SCISSOR};
             RHIPipelineDynamicStateCreateInfo dynamic_state_create_info {};
             dynamic_state_create_info.sType             = RHI_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
             dynamic_state_create_info.dynamicStateCount = 2;
             dynamic_state_create_info.pDynamicStates    = dynamic_states;
 
+            // Create Pipeline
             RHIGraphicsPipelineCreateInfo pipelineInfo {};
             pipelineInfo.sType               = RHI_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
             pipelineInfo.stageCount          = 2;
@@ -1519,6 +1576,7 @@ namespace Piccolo
         }
     }
 
+    // DescriptorSet
     void MainCameraPass::setupDescriptorSet()
     {
         setupModelGlobalDescriptorSet();
@@ -1529,44 +1587,39 @@ namespace Piccolo
 
     void MainCameraPass::setupModelGlobalDescriptorSet()
     {
+
         // update common model's global descriptor set
         RHIDescriptorSetAllocateInfo mesh_global_descriptor_set_alloc_info;
         mesh_global_descriptor_set_alloc_info.sType              = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         mesh_global_descriptor_set_alloc_info.pNext              = NULL;
         mesh_global_descriptor_set_alloc_info.descriptorPool     = m_rhi->getDescriptorPoor();
         mesh_global_descriptor_set_alloc_info.descriptorSetCount = 1;
-        mesh_global_descriptor_set_alloc_info.pSetLayouts        = &m_descriptor_infos[_mesh_global].layout;
+        mesh_global_descriptor_set_alloc_info.pSetLayouts        = &m_descriptor_infos[_mesh_global].layout;  // 对应 mesh_global 的descriptor layout
+
 
         if (RHI_SUCCESS != m_rhi->allocateDescriptorSets(&mesh_global_descriptor_set_alloc_info, m_descriptor_infos[_mesh_global].descriptor_set))
         {
             throw std::runtime_error("allocate mesh global descriptor set");
         }
 
+        
         RHIDescriptorBufferInfo mesh_perframe_storage_buffer_info = {};
-        // this offset plus dynamic_offset should not be greater than the size of the buffer
-        mesh_perframe_storage_buffer_info.offset = 0;
-        // the range means the size actually used by the shader per draw call
-        mesh_perframe_storage_buffer_info.range  = sizeof(MeshPerframeStorageBufferObject);
+        mesh_perframe_storage_buffer_info.offset = 0;                                        // this offset plus dynamic_offset should not be greater than the size of the buffer
+        mesh_perframe_storage_buffer_info.range  = sizeof(MeshPerframeStorageBufferObject);  // the range means the size actually used by the shader per draw call
         mesh_perframe_storage_buffer_info.buffer = m_global_render_resource->_storage_buffer._global_upload_ringbuffer;
-        assert(mesh_perframe_storage_buffer_info.range <
-               m_global_render_resource->_storage_buffer._max_storage_buffer_range);
-
+        assert(mesh_perframe_storage_buffer_info.range < m_global_render_resource->_storage_buffer._max_storage_buffer_range);
+        
         RHIDescriptorBufferInfo mesh_perdrawcall_storage_buffer_info = {};
         mesh_perdrawcall_storage_buffer_info.offset                 = 0;
         mesh_perdrawcall_storage_buffer_info.range                  = sizeof(MeshPerdrawcallStorageBufferObject);
-        mesh_perdrawcall_storage_buffer_info.buffer =
-            m_global_render_resource->_storage_buffer._global_upload_ringbuffer;
-        assert(mesh_perdrawcall_storage_buffer_info.range <
-               m_global_render_resource->_storage_buffer._max_storage_buffer_range);
+        mesh_perdrawcall_storage_buffer_info.buffer = m_global_render_resource->_storage_buffer._global_upload_ringbuffer;
+        assert(mesh_perdrawcall_storage_buffer_info.range < m_global_render_resource->_storage_buffer._max_storage_buffer_range);
 
         RHIDescriptorBufferInfo mesh_per_drawcall_vertex_blending_storage_buffer_info = {};
         mesh_per_drawcall_vertex_blending_storage_buffer_info.offset                 = 0;
-        mesh_per_drawcall_vertex_blending_storage_buffer_info.range =
-            sizeof(MeshPerdrawcallVertexBlendingStorageBufferObject);
-        mesh_per_drawcall_vertex_blending_storage_buffer_info.buffer =
-            m_global_render_resource->_storage_buffer._global_upload_ringbuffer;
-        assert(mesh_per_drawcall_vertex_blending_storage_buffer_info.range <
-               m_global_render_resource->_storage_buffer._max_storage_buffer_range);
+        mesh_per_drawcall_vertex_blending_storage_buffer_info.range = sizeof(MeshPerdrawcallVertexBlendingStorageBufferObject);
+        mesh_per_drawcall_vertex_blending_storage_buffer_info.buffer =  m_global_render_resource->_storage_buffer._global_upload_ringbuffer;
+        assert(mesh_per_drawcall_vertex_blending_storage_buffer_info.range < m_global_render_resource->_storage_buffer._max_storage_buffer_range);
 
         RHIDescriptorImageInfo brdf_texture_image_info = {};
         brdf_texture_image_info.sampler     = m_global_render_resource->_ibl_resource._brdfLUT_texture_sampler;
@@ -1575,8 +1628,7 @@ namespace Piccolo
 
         RHIDescriptorImageInfo irradiance_texture_image_info = {};
         irradiance_texture_image_info.sampler = m_global_render_resource->_ibl_resource._irradiance_texture_sampler;
-        irradiance_texture_image_info.imageView =
-            m_global_render_resource->_ibl_resource._irradiance_texture_image_view;
+        irradiance_texture_image_info.imageView = m_global_render_resource->_ibl_resource._irradiance_texture_image_view;
         irradiance_texture_image_info.imageLayout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         RHIDescriptorImageInfo specular_texture_image_info {};
@@ -1585,14 +1637,12 @@ namespace Piccolo
         specular_texture_image_info.imageLayout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         RHIDescriptorImageInfo point_light_shadow_texture_image_info{};
-        point_light_shadow_texture_image_info.sampler =
-            m_rhi->getOrCreateDefaultSampler(Default_Sampler_Nearest);
+        point_light_shadow_texture_image_info.sampler = m_rhi->getOrCreateDefaultSampler(Default_Sampler_Nearest);
         point_light_shadow_texture_image_info.imageView = m_point_light_shadow_color_image_view;
         point_light_shadow_texture_image_info.imageLayout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         RHIDescriptorImageInfo directional_light_shadow_texture_image_info{};
-        directional_light_shadow_texture_image_info.sampler =
-            m_rhi->getOrCreateDefaultSampler(Default_Sampler_Nearest);
+        directional_light_shadow_texture_image_info.sampler = m_rhi->getOrCreateDefaultSampler(Default_Sampler_Nearest);
         directional_light_shadow_texture_image_info.imageView = m_directional_light_shadow_color_image_view;
         directional_light_shadow_texture_image_info.imageLayout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 

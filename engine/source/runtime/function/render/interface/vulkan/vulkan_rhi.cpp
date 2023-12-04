@@ -2768,7 +2768,7 @@ namespace Piccolo
         }
     }
 
-    RHIShader* VulkanRHI::createShaderModule(const std::vector<unsigned char>& shader_code)
+    RHIShader* VulkanRHI::createShaderModule(const std::vector<unsigned char>& shader_code)   // shader的代码以一个char的vector传入
     {
         RHIShader* shahder = new VulkanShader();                                           // 封装的高级对象
 
@@ -2985,11 +2985,13 @@ namespace Piccolo
     }
 
     // todo : more descriptorSet
+    // allocate DescriptorSets
     bool VulkanRHI::allocateDescriptorSets(const RHIDescriptorSetAllocateInfo* pAllocateInfo, RHIDescriptorSet* &pDescriptorSets)
     {
         //descriptor_set_layout
         int descriptor_set_layout_size = pAllocateInfo->descriptorSetCount;
         std::vector<VkDescriptorSetLayout> vk_descriptor_set_layout_list(descriptor_set_layout_size);
+
         for (int i = 0; i < descriptor_set_layout_size; ++i)
         {
             const auto& rhi_descriptor_set_layout_element = pAllocateInfo->pSetLayouts[i];
@@ -3010,7 +3012,7 @@ namespace Piccolo
         descriptorset_allocate_info.pSetLayouts = vk_descriptor_set_layout_list.data();
 
         VkDescriptorSet vk_descriptor_set;
-        pDescriptorSets = new VulkanDescriptorSet;
+        pDescriptorSets = new VulkanDescriptorSet; 
         VkResult result = vkAllocateDescriptorSets(m_device, &descriptorset_allocate_info, &vk_descriptor_set);
         ((VulkanDescriptorSet*)pDescriptorSets)->setResource(vk_descriptor_set);
 

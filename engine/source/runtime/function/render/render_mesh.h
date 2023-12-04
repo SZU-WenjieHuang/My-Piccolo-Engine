@@ -33,6 +33,7 @@ namespace Piccolo
             Vector4  weights;
         };
 
+        // input vertex 的 binding
         static std::array<RHIVertexInputBindingDescription, 3> getBindingDescriptions()
         {
             std::array<RHIVertexInputBindingDescription, 3> binding_descriptions {};
@@ -41,7 +42,7 @@ namespace Piccolo
             binding_descriptions[0].binding   = 0;
             binding_descriptions[0].stride    = sizeof(VulkanMeshVertexPostition);
             binding_descriptions[0].inputRate = RHI_VERTEX_INPUT_RATE_VERTEX;
-            // varying blending
+            // varying blending  
             binding_descriptions[1].binding   = 1;
             binding_descriptions[1].stride    = sizeof(VulkanMeshVertexVaryingEnableBlending);
             binding_descriptions[1].inputRate = RHI_VERTEX_INPUT_RATE_VERTEX;
@@ -52,6 +53,7 @@ namespace Piccolo
             return binding_descriptions;
         }
 
+        // vertex input 的 attribute
         static std::array<RHIVertexInputAttributeDescription, 4> getAttributeDescriptions()
         {
             std::array<RHIVertexInputAttributeDescription, 4> attribute_descriptions {};
