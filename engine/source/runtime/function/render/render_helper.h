@@ -8,6 +8,7 @@ namespace Piccolo
     class RenderScene;
     class RenderCamera;
 
+    // 让value变成 aligment的倍数
     static inline uint32_t roundUp(uint32_t value, uint32_t alignment)
     {
         uint32_t temp = value + alignment - static_cast<uint32_t>(1);

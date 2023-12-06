@@ -919,3 +919,38 @@ void vkCmdNextSubpass(
     VkCommandBuffer commandBuffer,
     VkSubpassContents contents);
 ```
+
+### 44 descriptorset 的数量
+在渲染过程中，通常情况下，每个材质（material）和每个网格（mesh）和每个drawcall都需要绑定一个描述符集（descriptor set）。
+
+### 45 Dynamic offset
+我们在绑定perdrawcall的descriptor Set的时候，会设置一个参数是dynamic offset，如下:
+
+```cpp
+// bind perdrawcall
+uint32_t dynamic_offsets[3] = {perframe_dynamic_offset,
+                                perdrawcall_dynamic_offset,
+                                per_drawcall_vertex_blending_dynamic_offset};
+                                
+m_rhi->cmdBindDescriptorSetsPFN(m_rhi->getCurrentCommandBuffer(),
+                                RHI_PIPELINE_BIND_POINT_GRAPHICS,
+                                m_render_pipelines[_render_pipeline_type_mesh_gbuffer].layout,
+                                0,
+                                1,
+                                &m_descriptor_infos[_mesh_global].descriptor_set,
+                                3,
+                                dynamic_offsets);
+```
+
+Dynamic offset（动态偏移量）是在图形渲染中使用的一种技术，用于在绑定描述符集（Descriptor Set）时对存储缓冲区进行偏移。动态偏移量允许在每个绘制调用期间动态地调整存储缓冲区的偏移位置，以便使用不同的数据。
+
+1-perframe_dynamic_offset（每帧动态偏移量）：这个偏移量可能用于每帧更新的数据，
+例如摄像机的视图投影矩阵、光照信息等。由于这些数据每帧都会发生变化，因此需要在每次绘制调用之前通过动态偏移量更新相关的存储缓冲区。
+
+2-perdrawcall_dynamic_offset（每个绘制调用动态偏移量）：这个偏移量可能用于每个绘制调用独有的数据，
+例如每个绘制调用的模型矩阵、材质信息等。每个绘制调用可能使用不同的数据，因此通过动态偏移量可以在每次绘制调用之前更新相关的存储缓冲区。
+
+3-per_drawcall_vertex_blending_dynamic_offset（每个绘制调用顶点混合动态偏移量）：
+这个偏移量可能用于启用顶点混合的绘制调用中的顶点混合矩阵数据。顶点混合矩阵通常与每个绘制调用相关，因此可以使用动态偏移量在每次绘制调用之前更新相关的存储缓冲区。
+
+### 46 

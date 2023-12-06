@@ -2221,12 +2221,13 @@ namespace Piccolo
         std::map<VulkanPBRMaterial*, std::map<VulkanMesh*, std::vector<MeshNode>>> main_camera_mesh_drawcall_batch;
 
         // reorganize mesh
+        // 重新组织mesh的数据
         for (RenderMeshNode& node : *(m_visiable_nodes.p_main_camera_visible_mesh_nodes))
         {
             auto& mesh_instanced = main_camera_mesh_drawcall_batch[node.ref_material];
             auto& mesh_nodes     = mesh_instanced[node.ref_mesh];
 
-            MeshNode temp;
+            MeshNode temp;                                         // 创建Mesh并添加到Mesh_Nodes里
             temp.model_matrix = node.model_matrix;
             if (node.enable_vertex_blending)
             {
@@ -2253,25 +2254,18 @@ namespace Piccolo
         m_rhi->cmdSetScissorPFN(m_rhi->getCurrentCommandBuffer(), 0, 1, m_rhi->getSwapchainInfo().scissor);
 
         // perframe storage buffer
-        uint32_t perframe_dynamic_offset =
-            roundUp(m_global_render_resource->_storage_buffer
-                        ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()],
-                    m_global_render_resource->_storage_buffer._min_storage_buffer_offset_alignment);
+        uint32_t perframe_dynamic_offset = roundUp(m_global_render_resource->_storage_buffer._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()],
+                                                   m_global_render_resource->_storage_buffer._min_storage_buffer_offset_alignment);
 
-        m_global_render_resource->_storage_buffer._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] =
-            perframe_dynamic_offset + sizeof(MeshPerframeStorageBufferObject);
-        assert(m_global_render_resource->_storage_buffer
-                   ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] <=
-               (m_global_render_resource->_storage_buffer
-                    ._global_upload_ringbuffers_begin[m_rhi->getCurrentFrameIndex()] +
-                m_global_render_resource->_storage_buffer
-                    ._global_upload_ringbuffers_size[m_rhi->getCurrentFrameIndex()]));
+        m_global_render_resource->_storage_buffer._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] = perframe_dynamic_offset + sizeof(MeshPerframeStorageBufferObject);
+        assert(m_global_render_resource->_storage_buffer ._global_upload_ringbuffers_end  [m_rhi->getCurrentFrameIndex()] <=
+              (m_global_render_resource->_storage_buffer ._global_upload_ringbuffers_begin[m_rhi->getCurrentFrameIndex()] +
+               m_global_render_resource->_storage_buffer ._global_upload_ringbuffers_size [m_rhi->getCurrentFrameIndex()]));
 
-        (*reinterpret_cast<MeshPerframeStorageBufferObject*>(
-            reinterpret_cast<uintptr_t>(
-                m_global_render_resource->_storage_buffer._global_upload_ringbuffer_memory_pointer) +
-            perframe_dynamic_offset)) = m_mesh_perframe_storage_buffer_object;
+        (*reinterpret_cast<MeshPerframeStorageBufferObject*>( reinterpret_cast<uintptr_t>( m_global_render_resource->_storage_buffer._global_upload_ringbuffer_memory_pointer) + perframe_dynamic_offset)) 
+            = m_mesh_perframe_storage_buffer_object;
 
+        // 遍历每一个待绘制的mesh
         for (auto& pair1 : main_camera_mesh_drawcall_batch)
         {
             VulkanPBRMaterial& material       = (*pair1.first);
@@ -2289,6 +2283,7 @@ namespace Piccolo
 
             // TODO: render from near to far
 
+            // 遍历该mesh下的所有nodes
             for (auto& pair2 : mesh_instanced)
             {
                 VulkanMesh& mesh       = (*pair2.first);
@@ -2319,12 +2314,15 @@ namespace Piccolo
                                                    offsets);
                     m_rhi->cmdBindIndexBufferPFN(m_rhi->getCurrentCommandBuffer(), mesh.mesh_index_buffer, 0, RHI_INDEX_TYPE_UINT16);
 
+                    // 计算drawcall数量 
+
                     uint32_t drawcall_max_instance_count =
                         (sizeof(MeshPerdrawcallStorageBufferObject::mesh_instances) /
                          sizeof(MeshPerdrawcallStorageBufferObject::mesh_instances[0]));
-                    uint32_t drawcall_count =
-                        roundUp(total_instance_count, drawcall_max_instance_count) / drawcall_max_instance_count;
+    
+                    uint32_t drawcall_count = roundUp(total_instance_count, drawcall_max_instance_count) / drawcall_max_instance_count;
 
+                    // 逐个drawcall绘制
                     for (uint32_t drawcall_index = 0; drawcall_index < drawcall_count; ++drawcall_index)
                     {
                         uint32_t current_instance_count =
@@ -2332,6 +2330,8 @@ namespace Piccolo
                              drawcall_max_instance_count) ?
                                 (total_instance_count - drawcall_max_instance_count * drawcall_index) :
                                 drawcall_max_instance_count;
+                        
+                        // 以下是在设置dynamic offset
 
                         // per drawcall storage buffer
                         uint32_t perdrawcall_dynamic_offset =
@@ -2421,6 +2421,7 @@ namespace Piccolo
                         uint32_t dynamic_offsets[3] = {perframe_dynamic_offset,
                                                        perdrawcall_dynamic_offset,
                                                        per_drawcall_vertex_blending_dynamic_offset};
+
                         m_rhi->cmdBindDescriptorSetsPFN(m_rhi->getCurrentCommandBuffer(),
                                                         RHI_PIPELINE_BIND_POINT_GRAPHICS,
                                                         m_render_pipelines[_render_pipeline_type_mesh_gbuffer].layout,
@@ -2444,6 +2445,7 @@ namespace Piccolo
         m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
     }
 
+
     // Deffered Lighting (在deffered的draw里使用)
     void MainCameraPass::drawDeferredLighting()
     {
@@ -2452,8 +2454,10 @@ namespace Piccolo
             m_render_pipelines[_render_pipeline_type_deferred_lighting].pipeline);
 
         m_rhi->cmdSetViewportPFN(m_rhi->getCurrentCommandBuffer(), 0, 1, m_rhi->getSwapchainInfo().viewport);
+
         m_rhi->cmdSetScissorPFN(m_rhi->getCurrentCommandBuffer(), 0, 1, m_rhi->getSwapchainInfo().scissor);
 
+        // 设置perframe 的dynamic offet
         uint32_t perframe_dynamic_offset =
             roundUp(m_global_render_resource->_storage_buffer
                         ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()],
@@ -2473,10 +2477,14 @@ namespace Piccolo
                 m_global_render_resource->_storage_buffer._global_upload_ringbuffer_memory_pointer) +
             perframe_dynamic_offset)) = m_mesh_perframe_storage_buffer_object;
 
+        // 三个descriptorSet
         RHIDescriptorSet* descriptor_sets[3] = {m_descriptor_infos[_mesh_global].descriptor_set,
                                               m_descriptor_infos[_deferred_lighting].descriptor_set,
                                               m_descriptor_infos[_skybox].descriptor_set};
+
+        // 四个dynamic_offset
         uint32_t        dynamic_offsets[4] = {perframe_dynamic_offset, perframe_dynamic_offset, 0, 0};
+
         m_rhi->cmdBindDescriptorSetsPFN(m_rhi->getCurrentCommandBuffer(),
                                         RHI_PIPELINE_BIND_POINT_GRAPHICS,
                                         m_render_pipelines[_render_pipeline_type_deferred_lighting].layout,
@@ -2718,7 +2726,7 @@ namespace Piccolo
         m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
     }
 
-    // 在forward的draw里使用 deffered的
+    // 在forward的draw里使用 deffered的skybox集成在deffered lighting里
     void MainCameraPass::drawSkybox()
     {
         uint32_t perframe_dynamic_offset =
