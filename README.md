@@ -644,3 +644,278 @@ Bind Descriptor Set Layout 2</br>
 Bind Descriptor Set Layout 3</br>
 
 这样的好处是我们可以使用不同的descriptorSet来管理不同的resources</br>
+
+### 36 shader的处理逻辑
+
+01 GLSL文件(.vert / .frag)</br>
+最开始的就是我们编写的shader，以GLSL的形式；
+
+02 SPIR-V文件(.spv)</br>
+在编译阶段，通过 ./cmake/ShaderCompile.cmake 将 .vert 和 .frag文件
+编译成 .spv文件。讲道理在这个阶段vulkan就可以直接读取使用了，但我们希望减少
+文件加载的开销。
+
+03 CPP的vector(.h)</br>
+使用GenerateShaderCPPFile.cmake脚本将SPIR-V文件转换为C++源代码，并将其存储在一个std::vector<unsigned char>变量中。
+
+这样做的好处是，在运行时，你可以直接使用生成的C++源代码中的std::vector<unsigned char>变量来加载和访问着色器代码，而无需在运行时加载和解析原始的GLSL或SPIR-V文件。
+
+通过将着色器代码转换为C++源代码并嵌入在可执行文件中，可以减少运行时的文件加载和解析时间，并且使着色器代码更加独立和可移植。
+
+阅读这两个.cmake 以理解cmake文件的运行过程与代码逻辑;
+
+### 37 Vertex Input的 Binding 和 Attribute的关系
+
+我们在准备 pipeline的时候需要设置vertex input的信息:
+```cpp
+auto vertex_binding_descriptions   = MeshVertex::getBindingDescriptions();
+auto vertex_attribute_descriptions = MeshVertex::getAttributeDescriptions();
+```
+
+实际上这就是类似OpenGL里的VAO去描述顶点的信息和属性。
+
+binding、position 和 attribute 之间的关系如下：(一个Binding内可以包括多个Position)
+
+Binding 描述了一组顶点属性的布局和访问方式。</br>
+Position 是顶点数据结构中的一个属性，通常用于表示顶点的位置信息。</br>
+Attribute 描述了顶点数据的其他属性，如法线、颜色、纹理坐标等。</br>
+
+在以下的代码里设置: render_mesh.h
+
+```cpp
+// input vertex 的 binding
+static std::array<RHIVertexInputBindingDescription, 3> getBindingDescriptions()
+{
+    std::array<RHIVertexInputBindingDescription, 3> binding_descriptions {};
+
+    // position
+    binding_descriptions[0].binding   = 0;
+    binding_descriptions[0].stride    = sizeof(VulkanMeshVertexPostition);
+    binding_descriptions[0].inputRate = RHI_VERTEX_INPUT_RATE_VERTEX;
+    // varying blending  
+    binding_descriptions[1].binding   = 1;
+    binding_descriptions[1].stride    = sizeof(VulkanMeshVertexVaryingEnableBlending);
+    binding_descriptions[1].inputRate = RHI_VERTEX_INPUT_RATE_VERTEX;
+    // varying
+    binding_descriptions[2].binding   = 2;
+    binding_descriptions[2].stride    = sizeof(VulkanMeshVertexVarying);
+    binding_descriptions[2].inputRate = RHI_VERTEX_INPUT_RATE_VERTEX;
+    return binding_descriptions;
+}
+
+// vertex input 的 attribute
+static std::array<RHIVertexInputAttributeDescription, 4> getAttributeDescriptions()
+{
+    std::array<RHIVertexInputAttributeDescription, 4> attribute_descriptions {};
+
+    // position
+    attribute_descriptions[0].binding  = 0;
+    attribute_descriptions[0].location = 0;
+    attribute_descriptions[0].format   = RHI_FORMAT_R32G32B32_SFLOAT;
+    attribute_descriptions[0].offset   = offsetof(VulkanMeshVertexPostition, position);
+
+    // varying blending
+    attribute_descriptions[1].binding  = 1;
+    attribute_descriptions[1].location = 1;
+    attribute_descriptions[1].format   = RHI_FORMAT_R32G32B32_SFLOAT;
+    attribute_descriptions[1].offset   = offsetof(VulkanMeshVertexVaryingEnableBlending, normal);
+    attribute_descriptions[2].binding  = 1;
+    attribute_descriptions[2].location = 2;
+    attribute_descriptions[2].format   = RHI_FORMAT_R32G32B32_SFLOAT;
+    attribute_descriptions[2].offset   = offsetof(VulkanMeshVertexVaryingEnableBlending, tangent);
+
+    // varying
+    attribute_descriptions[3].binding  = 2;
+    attribute_descriptions[3].location = 3;
+    attribute_descriptions[3].format   = RHI_FORMAT_R32G32_SFLOAT;
+    attribute_descriptions[3].offset   = offsetof(VulkanMeshVertexVarying, texcoord);
+
+    return attribute_descriptions;
+}
+```
+
+为什么三个bingding 对应四个Position? 因为可能处于数据格式的要求，访问格式的需要求。 比如在这里 texcoord的数据格式就和Normal/tangent不同。</br>
+可以把binding理解成position的一个组。
+
+### 37 可重用的DescriptorSet设计
+
+### 38 render resource xmind
+
+### 39 assert
+assert 是一个在程序中用于进行断言检查的宏。它的作用是在运行时检查一个条件是否为真，如果条件为假，则触发断言错误，并终止程序执行。断言用于在开发和调试阶段对程序的假设进行验证，以确保程序的正确性和稳定性。
+
+assert 宏的基本语法如下：
+```cpp
+#include <cassert>
+
+assert(condition);
+```
+
+condition 是一个布尔表达式，表示要进行断言检查的条件。如果 condition 为假（即 false），则 assert 宏会触发断言错误。
+
+以下是一些使用 assert 的示例：
+
+```cpp
+#include <cassert>
+
+void divide(int a, int b) {
+    assert(b != 0);  // 确保除数不为零
+    int result = a / b;
+    // ...
+}
+
+void processArray(int* array, int size) {
+    assert(array != nullptr);  // 确保数组不为空指针
+    assert(size > 0);  // 确保数组大小大于0
+    // ...
+}
+
+int main() {
+    int x = 5;
+    assert(x > 0);  // 确保 x 大于0
+
+    divide(10, 2);
+    divide(10, 0);  // 触发断言错误，除数为零
+
+    int arr[] = {1, 2, 3};
+    processArray(arr, 3);
+    processArray(nullptr, 0);  // 触发断言错误，空指针和大小为0
+
+    return 0;
+}
+```
+
+断言通常在调试阶段启用，而在发布版本中被禁用。在发布版本中，断言语句会被编译器移除，以提高程序的性能。因此，断言的使用主要是为了帮助开发者在开发和调试过程中及时发现问题，并不是程序中必须要有的一部分。
+
+### 40 C++ 中的-> 和 . 的区别
+
+一句话概括: -> 用于指针访问成员对象和成员函数，不需要解引用；
+
+(1) . 运算符：用于直接访问对象的成员，适用于对象本身或对象引用。
+
+(2) -> 运算符：用于通过指针访问对象的成员，适用于指向对象的指针。
+
+1-对象类型：. 运算符适用于对象本身或对象引用，而 -> 运算符适用于指向对象的指针。</br>
+2-操作符优先级：-> 运算符的优先级比 . 运算符的优先级高。因此，在表达式中，-> 运算符的执行顺序优先于 . 运算符。</br>
+3-操作数：. 运算符的左操作数是一个具体的对象或对象引用，右操作数是成员名。而 -> 运算符的左操作数是一个指向对象的指针，右操作数是成员名。</br>
+4-解引用：使用 . 运算符时，我们可以直接访问对象的成员，而不需要解引用指针。而使用 -> 运算符时，必须先对指针进行解引用，然后才能访问对象的成员。</br>
+
+以下是一个demo:
+
+```cpp
+#include <iostream>
+
+class MyClass {
+public:
+    int value;
+
+    void print() {
+        std::cout << "Value: " << value << std::endl;
+    }
+};
+
+int main() {
+    MyClass obj;
+    obj.value = 42;
+
+    MyClass* ptr = &obj;  // 创建指针 obj取址
+
+    // 使用 . 运算符访问对象的成员
+    std::cout << "Value (obj): " << obj.value << std::endl;
+    obj.print();
+
+    // 使用 -> 运算符访问指针所指向的对象的成员
+    std::cout << "Value (ptr): " << ptr->value << std::endl;
+    ptr->print();
+
+    return 0;
+}
+```
+
+### 41 Vulkan中定义一个image resource需要的四个对象
+
+1-***Image***: 它描述了图像的格式、尺寸、使用方式等属性。
+sType：指定结构体类型，通常为 VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO。</br>
+pNext：指向附加的创建信息，通常为空。</br>
+flags：指定图像的标志位，如是否支持立方体贴图、是否支持多级渐远纹理等。</br>
+imageType：指定图像的类型，如 1D、2D 或 3D。</br>
+format：指定图像的像素格式。</br>
+extent：指定图像的尺寸，包括宽度、高度和深度。</br>
+mipLevels：指定图像的多级渐远纹理级别数量。</br>
+arrayLayers：指定图像的数组层数量。</br>
+samples：指定图像的抗锯齿采样数量。</br>
+tiling：指定图像的布局方式，如线性布局或渐远纹理布局。</br>
+usage：指定图像的使用方式，如颜色附件、深度/模板附件、采样等。</br>
+sharingMode：指定图像的共享方式，如在多个队列之间共享。</br>
+queueFamilyIndexCount 和 pQueueFamilyIndices：指定共享图像的队列族索引。</br>
+initialLayout：指定图像的初始布局</br>
+
+2-ImageView: Image的一个视图，它定义了对 Image 数据的访问方式。ImageView 可以指定图像的特定部分、特定格式等信息，以便在着色器中对图像进行采样或读写操作。</br>
+sType：指定结构体类型，通常为 VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO。</br>
+pNext：指向附加的创建信息，通常为空。</br>
+flags：指定图像视图的标志位，通常为 0。</br>
+image：指定图像对象的句柄。</br>
+viewType：指定图像视图的类型，如 1D、2D 或 3D。</br>
+format：指定图像视图的像素格式，通常与图像的格式相同。</br>
+components：指定图像视图的色彩通道映射关系。</br>
+subresourceRange：指定图像视图的子资源范围，包括基本数组层级、层级数量、基本 mip 级别和 mip 级别数量。</br>
+
+3-Sampler: Sampler 定义了在着色器中对图像进行采样的方式。它包含了采样过滤器、边界模式、向量规范化等参数，用于控制如何从纹理图像中获取像素值。</br>
+sType：指定结构体类型，通常为 VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO。</br>
+pNext：指向附加的创建信息，通常为空。</br>
+flags：指定采样器的标志位，通常为 0。</br>
+magFilter 和 minFilter：指定放大和缩小时的采样过滤器。</br>
+mipmapMode：指定多级渐远纹理的采样模式。</br>
+addressModeU、addressModeV 和 addressModeW：指定纹理坐标超出边界时的处理方式。</br>
+mipLodBias：指定 mip 级别的偏移量。</br>
+anisotropyEnable 和 maxAnisotropy：指定是否启用各向异性过滤以及最大各向异性采样率。</br>
+compareEnable 和 compareOp：指定是否启用深度比较和深度比较操作。</br>
+minLod 和 maxLod：指定 mip 级别的范围。</br>
+borderColor：指定纹理边界的颜色。</br>
+unnormalizedCoordinates：指定纹理坐标是否为非规范化坐标。</br>
+
+4-Allocation: 是指为图像分配的内存。</br>
+sType：指定结构体类型，通常为 VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO。</br>
+pNext：指向附加的创建信息，通常为空。</br>
+allocationSize：指定要分配的内存大小。</br>
+memoryTypeIndex：指定内存类型的索引，用于选择合适的内存堆。</br>
+
+### 42 Push Event 和 Pop Event
+
+在 Vulkan 中，pushEvent 函数中的调试工具标签主要用于在 RenderDoc 中创建一个标记，以便在捕获的渲染帧中标记特定的事件或代码块。这些事件标签可以帮助开发人员在 RenderDoc 中更好地理解和分析渲染过程中的不同阶段。
+
+对应的函数是: 
+```cpp
+    void VulkanRHI::pushEvent(RHICommandBuffer* commond_buffer, const char* name, const float* color)
+    {
+        if (m_enable_debug_utils_label)
+        {
+            VkDebugUtilsLabelEXT label_info;
+            label_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+            label_info.pNext = nullptr;
+            label_info.pLabelName = name;
+            for (int i = 0; i < 4; ++i)
+                label_info.color[i] = color[i];
+            _vkCmdBeginDebugUtilsLabelEXT(((VulkanCommandBuffer*)commond_buffer)->getResource(), &label_info);
+        }
+    }
+```
+传入的就是renderDoc里的color；
+
+那 PopEvent呢，就是为了保证这个调试的事件可以正确的闭合，比如下面的代码就是一个正确的追踪循环:
+
+```cpp
+    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "BasePass", color);
+
+    drawMeshGbuffer();
+
+    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
+```
+
+### 43 vkCmdNextSubpass
+意义是切换到下一个subpass，函数的原型如下:
+```cpp
+void vkCmdNextSubpass(
+    VkCommandBuffer commandBuffer,
+    VkSubpassContents contents);
+```

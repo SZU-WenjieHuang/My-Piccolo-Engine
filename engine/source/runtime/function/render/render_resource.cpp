@@ -199,6 +199,7 @@ namespace Piccolo
             throw std::runtime_error("vk create sampler");
         }
 
+        // 以下两个需要开启mipmap
         samplerInfo.minLod = 0.0f;
         samplerInfo.maxLod = 8.0f; // TODO: irradiance_texture_miplevels
         samplerInfo.mipLodBias = 0.0f;

@@ -23,6 +23,7 @@ namespace Piccolo
 
     struct IBLResource
     {
+        // 三种texture的 image and views and sampler and image_allocation
         RHIImage* _brdfLUT_texture_image;
         RHIImageView* _brdfLUT_texture_image_view;
         RHISampler* _brdfLUT_texture_sampler;

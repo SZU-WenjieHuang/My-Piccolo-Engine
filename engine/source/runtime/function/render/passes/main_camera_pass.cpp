@@ -624,10 +624,12 @@ namespace Piccolo
             mesh_global_layout_specular_texture_binding         = mesh_global_layout_brdfLUT_texture_binding;               // 同Bingding 3
             mesh_global_layout_specular_texture_binding.binding = 5;
 
+            // Binding 6
             RHIDescriptorSetLayoutBinding& mesh_global_layout_point_light_shadow_texture_binding = mesh_global_layout_bindings[6];
             mesh_global_layout_point_light_shadow_texture_binding         = mesh_global_layout_brdfLUT_texture_binding;     // 同 Binding 3
             mesh_global_layout_point_light_shadow_texture_binding.binding = 6;
 
+            // Binding 7
             RHIDescriptorSetLayoutBinding& mesh_global_layout_directional_light_shadow_texture_binding = mesh_global_layout_bindings[7]; 
             mesh_global_layout_directional_light_shadow_texture_binding = mesh_global_layout_brdfLUT_texture_binding;       // 同 Binding 3
             mesh_global_layout_directional_light_shadow_texture_binding.binding = 7;
@@ -1585,6 +1587,7 @@ namespace Piccolo
         setupGbufferLightingDescriptorSet();
     }
 
+    // 01
     void MainCameraPass::setupModelGlobalDescriptorSet()
     {
 
@@ -1602,15 +1605,15 @@ namespace Piccolo
             throw std::runtime_error("allocate mesh global descriptor set");
         }
 
-        
+        // model descriptor 对应的8个binding， 其中包括image和buffer
         RHIDescriptorBufferInfo mesh_perframe_storage_buffer_info = {};
         mesh_perframe_storage_buffer_info.offset = 0;                                        // this offset plus dynamic_offset should not be greater than the size of the buffer
         mesh_perframe_storage_buffer_info.range  = sizeof(MeshPerframeStorageBufferObject);  // the range means the size actually used by the shader per draw call
         mesh_perframe_storage_buffer_info.buffer = m_global_render_resource->_storage_buffer._global_upload_ringbuffer;
-        assert(mesh_perframe_storage_buffer_info.range < m_global_render_resource->_storage_buffer._max_storage_buffer_range);
+        assert(mesh_perframe_storage_buffer_info.range < m_global_render_resource->_storage_buffer._max_storage_buffer_range); // assert不过就会报错，一般是用于debug阶段的调试
         
         RHIDescriptorBufferInfo mesh_perdrawcall_storage_buffer_info = {};
-        mesh_perdrawcall_storage_buffer_info.offset                 = 0;
+        mesh_perdrawcall_storage_buffer_info.offset                 = 0;                    
         mesh_perdrawcall_storage_buffer_info.range                  = sizeof(MeshPerdrawcallStorageBufferObject);
         mesh_perdrawcall_storage_buffer_info.buffer = m_global_render_resource->_storage_buffer._global_upload_ringbuffer;
         assert(mesh_perdrawcall_storage_buffer_info.range < m_global_render_resource->_storage_buffer._max_storage_buffer_range);
@@ -1706,6 +1709,7 @@ namespace Piccolo
                                     NULL);
     }
 
+    // 02
     void MainCameraPass::setupSkyboxDescriptorSet()
     {
         RHIDescriptorSetAllocateInfo skybox_descriptor_set_alloc_info;
@@ -1755,6 +1759,7 @@ namespace Piccolo
         m_rhi->updateDescriptorSets(2, skybox_descriptor_writes_info, 0, NULL);
     }
 
+    // 03
     void MainCameraPass::setupAxisDescriptorSet()
     {
         RHIDescriptorSetAllocateInfo axis_descriptor_set_alloc_info;
@@ -1806,7 +1811,8 @@ namespace Piccolo
                                     0,
                                     NULL);
     }
-
+    
+    // 04
     void MainCameraPass::setupGbufferLightingDescriptorSet()
     {
         RHIDescriptorSetAllocateInfo gbuffer_light_global_descriptor_set_alloc_info;
@@ -1822,8 +1828,10 @@ namespace Piccolo
         }
     }
 
+    // 在initialize()中被初始化
     void MainCameraPass::setupFramebufferDescriptorSet()
     {
+        // 三个G-Buffer和一个depth
         RHIDescriptorImageInfo gbuffer_normal_input_attachment_info = {};
         gbuffer_normal_input_attachment_info.sampler = m_rhi->getOrCreateDefaultSampler(Default_Sampler_Nearest);
         gbuffer_normal_input_attachment_info.imageView   = m_framebuffer.attachments[_main_camera_pass_gbuffer_a].view;
@@ -1846,6 +1854,7 @@ namespace Piccolo
         depth_input_attachment_info.imageView   = m_rhi->getDepthImageInfo().depth_image_view;
         depth_input_attachment_info.imageLayout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+        // 以及他们的write info
         RHIWriteDescriptorSet deferred_lighting_descriptor_writes_info[4];
 
         RHIWriteDescriptorSet& gbuffer_normal_descriptor_input_attachment_write_info =
@@ -1905,13 +1914,17 @@ namespace Piccolo
                                     NULL);
     }
 
+    // 在初始化和update()里都会有调用
     void MainCameraPass::setupSwapchainFramebuffers()
     {
+        // 遍历swapchain中的 imageViews，为每一个imageView创建一个framebufffer
+
         m_swapchain_framebuffers.resize(m_rhi->getSwapchainInfo().imageViews.size());
 
         // create frame buffer for every imageview
         for (size_t i = 0; i < m_rhi->getSwapchainInfo().imageViews.size(); i++)
         {
+            // 创建一个imageView的数组 包含9个view 作为frame buffer的attachment
             RHIImageView* framebuffer_attachments_for_image_view[_main_camera_pass_attachment_count] = {
                 m_framebuffer.attachments[_main_camera_pass_gbuffer_a].view,
                 m_framebuffer.attachments[_main_camera_pass_gbuffer_b].view,
@@ -1923,6 +1936,7 @@ namespace Piccolo
                 m_rhi->getDepthImageInfo().depth_image_view,
                 m_rhi->getSwapchainInfo().imageViews[i] };
 
+            // 创建frambuffer
             RHIFramebufferCreateInfo framebuffer_create_info {};
             framebuffer_create_info.sType      = RHI_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebuffer_create_info.flags      = 0U;
@@ -1944,6 +1958,7 @@ namespace Piccolo
 
     void MainCameraPass::updateAfterFramebufferRecreate()
     {
+        // 销毁本来的attachments
         for (size_t i = 0; i < m_framebuffer.attachments.size(); i++)
         {
             m_rhi->destroyImage(m_framebuffer.attachments[i].image);
@@ -1951,6 +1966,7 @@ namespace Piccolo
             m_rhi->freeMemory(m_framebuffer.attachments[i].mem);
         }
 
+        // 销毁framebuffer
         for (auto framebuffer : m_swapchain_framebuffers)
         {
             m_rhi->destroyFramebuffer(framebuffer);
@@ -1965,6 +1981,8 @@ namespace Piccolo
         setupParticlePass();
     }
 
+
+    // 主要的draw函数入口 (其实是deffered)
     void MainCameraPass::draw(ColorGradingPass& color_grading_pass,
                               FXAAPass&         fxaa_pass,
                               ToneMappingPass&  tone_mapping_pass,
@@ -1981,6 +1999,7 @@ namespace Piccolo
             renderpass_begin_info.renderArea.offset = {0, 0};
             renderpass_begin_info.renderArea.extent = m_rhi->getSwapchainInfo().extent;
 
+            // 每个attachment都clear value
             RHIClearValue clear_values[_main_camera_pass_attachment_count];
             clear_values[_main_camera_pass_gbuffer_a].color                = {{0.0f, 0.0f, 0.0f, 0.0f}};
             clear_values[_main_camera_pass_gbuffer_b].color                = {{0.0f, 0.0f, 0.0f, 0.0f}};
@@ -1998,6 +2017,9 @@ namespace Piccolo
         }
 
         float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+        // 01 mesh GBuffer
+
         m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "BasePass", color);
 
         drawMeshGbuffer();
@@ -2005,6 +2027,8 @@ namespace Piccolo
         m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
 
         m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
+
+        // 02 deferred Lighting
 
         m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Deferred Lighting", color);
 
@@ -2014,14 +2038,17 @@ namespace Piccolo
 
         m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+        // 03 Forward lighting (这里绘制的是particle)
+
         m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Forward Lighting", color);
 
         particle_pass.draw();
 
         m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
-
+    
         m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+        // 04 tone mapping
         tone_mapping_pass.draw();
 
         m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
@@ -2030,11 +2057,14 @@ namespace Piccolo
 
         m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+        // 05 fxaa
+
         if (m_enable_fxaa)
             fxaa_pass.draw();
 
         m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+        // clear attachments 和 rects(矩形区域)
         RHIClearAttachment clear_attachments[1];
         clear_attachments[0].aspectMask                  = RHI_IMAGE_ASPECT_COLOR_BIT;
         clear_attachments[0].colorAttachment             = 0;
@@ -2049,17 +2079,24 @@ namespace Piccolo
         clear_rects[0].rect.offset.y      = 0;
         clear_rects[0].rect.extent.width  = m_rhi->getSwapchainInfo().extent.width;
         clear_rects[0].rect.extent.height = m_rhi->getSwapchainInfo().extent.height;
+
         m_rhi->cmdClearAttachmentsPFN(m_rhi->getCurrentCommandBuffer(),
                                       sizeof(clear_attachments) / sizeof(clear_attachments[0]),
                                       clear_attachments,
                                       sizeof(clear_rects) / sizeof(clear_rects[0]),
                                       clear_rects);
 
+        // 06 Axis
+
         drawAxis();
+
+        // 07 UI pass
 
         ui_pass.draw();
 
         m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
+
+        // 08 Combine UI Pass
 
         combine_ui_pass.draw();
 
@@ -2102,29 +2139,39 @@ namespace Piccolo
         m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
         float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-        m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Forward Lighting", color);
 
+        m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Forward Lighting", color);
+        
+        // Forward Lighting
         drawMeshLighting();
+
+        // Skybox
         drawSkybox();
+
+        // Particle
         particle_pass.draw();
 
         m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
 
         m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+        // Tone Mapping
         tone_mapping_pass.draw();
 
         m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+        // Color Grading
         color_grading_pass.draw();
 
         m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+        // fxaa
         if (m_enable_fxaa)
             fxaa_pass.draw();
 
         m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+        // 绘制Axis和UI之前需要清屏
         RHIClearAttachment clear_attachments[1];
         clear_attachments[0].aspectMask                  = RHI_IMAGE_ASPECT_COLOR_BIT;
         clear_attachments[0].colorAttachment             = 0;
@@ -2145,18 +2192,23 @@ namespace Piccolo
                                       sizeof(clear_rects) / sizeof(clear_rects[0]),
                                       clear_rects);
 
+        // Axis
         drawAxis();
 
+        // UI
         ui_pass.draw();
 
         m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+        // Combine
         combine_ui_pass.draw();
 
         m_rhi->cmdEndRenderPassPFN(m_rhi->getCurrentCommandBuffer());
     }
 
-    // G-Buffer of Deffered Rendering
+
+    // G-Buffer of Deffered Rendering 在deffered的draw里用使用
+    // 每一个Pipeline里是完整的vulkan渲染流程
     void MainCameraPass::drawMeshGbuffer()
     {
         struct MeshNode
@@ -2186,12 +2238,18 @@ namespace Piccolo
         }
 
         float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+
         m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Mesh GBuffer", color);
 
+        // Bind Pipeline
         m_rhi->cmdBindPipelinePFN(m_rhi->getCurrentCommandBuffer(),
                                   RHI_PIPELINE_BIND_POINT_GRAPHICS,
                                   m_render_pipelines[_render_pipeline_type_mesh_gbuffer].pipeline);
+
+        // Set ViewPort
         m_rhi->cmdSetViewportPFN(m_rhi->getCurrentCommandBuffer(), 0, 1, m_rhi->getSwapchainInfo().viewport);
+
+        // Set Scissors
         m_rhi->cmdSetScissorPFN(m_rhi->getCurrentCommandBuffer(), 0, 1, m_rhi->getSwapchainInfo().scissor);
 
         // perframe storage buffer
@@ -2386,7 +2444,7 @@ namespace Piccolo
         m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
     }
 
-    // Deffered Lighting
+    // Deffered Lighting (在deffered的draw里使用)
     void MainCameraPass::drawDeferredLighting()
     {
         m_rhi->cmdBindPipelinePFN(m_rhi->getCurrentCommandBuffer(),
@@ -2431,6 +2489,7 @@ namespace Piccolo
         m_rhi->cmdDraw(m_rhi->getCurrentCommandBuffer(), 3, 1, 0, 0);
     }
 
+    // 在 forward的draw里使用
     void MainCameraPass::drawMeshLighting()
     {
         struct MeshNode
@@ -2659,6 +2718,7 @@ namespace Piccolo
         m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
     }
 
+    // 在forward的draw里使用 deffered的
     void MainCameraPass::drawSkybox()
     {
         uint32_t perframe_dynamic_offset =
@@ -2699,6 +2759,7 @@ namespace Piccolo
         m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
     }
 
+    // 在forward和deffered里都要用
     void MainCameraPass::drawAxis()
     {
         if (!m_is_show_axis)
