@@ -23,17 +23,19 @@ namespace Piccolo
         updateAfterFramebufferRecreate(_init_info->input_attachment);
     }
 
+    // DescriptorSet Layout
     void ToneMappingPass::setupDescriptorSetLayout()
     {
         m_descriptor_infos.resize(1);
 
         RHIDescriptorSetLayoutBinding post_process_global_layout_bindings[1] = {};
 
+        // 只有一个binding
         RHIDescriptorSetLayoutBinding& post_process_global_layout_input_attachment_binding = post_process_global_layout_bindings[0];
         post_process_global_layout_input_attachment_binding.binding         = 0;
-        post_process_global_layout_input_attachment_binding.descriptorType  = RHI_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        post_process_global_layout_input_attachment_binding.descriptorType  = RHI_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;  // input attachment 表示是一个Image
         post_process_global_layout_input_attachment_binding.descriptorCount = 1;
-        post_process_global_layout_input_attachment_binding.stageFlags      = RHI_SHADER_STAGE_FRAGMENT_BIT;
+        post_process_global_layout_input_attachment_binding.stageFlags      = RHI_SHADER_STAGE_FRAGMENT_BIT;         // fragment
 
         RHIDescriptorSetLayoutCreateInfo post_process_global_layout_create_info;
         post_process_global_layout_create_info.sType = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -47,10 +49,13 @@ namespace Piccolo
             throw std::runtime_error("create post process global layout");
         }
     }
+
+    // Pipelines
     void ToneMappingPass::setupPipelines()
     {
         m_render_pipelines.resize(1);
 
+        // pipeline layout
         RHIDescriptorSetLayout*      descriptorset_layouts[1] = {m_descriptor_infos[0].layout};
         RHIPipelineLayoutCreateInfo pipeline_layout_create_info {};
         pipeline_layout_create_info.sType          = RHI_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -62,6 +67,7 @@ namespace Piccolo
             throw std::runtime_error("create post process pipeline layout");
         }
 
+        // Shader
         RHIShader* vert_shader_module = m_rhi->createShaderModule(POST_PROCESS_VERT);
         RHIShader* frag_shader_module = m_rhi->createShaderModule(TONE_MAPPING_FRAG);
 
@@ -80,6 +86,7 @@ namespace Piccolo
         RHIPipelineShaderStageCreateInfo shader_stages[] = {vert_pipeline_shader_stage_create_info,
                                                            frag_pipeline_shader_stage_create_info};
 
+        // Pipeline State
         RHIPipelineVertexInputStateCreateInfo vertex_input_state_create_info {};
         vertex_input_state_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertex_input_state_create_info.vertexBindingDescriptionCount   = 0;
@@ -87,11 +94,13 @@ namespace Piccolo
         vertex_input_state_create_info.vertexAttributeDescriptionCount = 0;
         vertex_input_state_create_info.pVertexAttributeDescriptions    = NULL;
 
+        // Pipeline Assembly
         RHIPipelineInputAssemblyStateCreateInfo input_assembly_create_info {};
         input_assembly_create_info.sType                  = RHI_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
         input_assembly_create_info.topology               = RHI_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
         input_assembly_create_info.primitiveRestartEnable = RHI_FALSE;
 
+        // Pipeline Viewport
         RHIPipelineViewportStateCreateInfo viewport_state_create_info {};
         viewport_state_create_info.sType         = RHI_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
         viewport_state_create_info.viewportCount = 1;
@@ -99,6 +108,7 @@ namespace Piccolo
         viewport_state_create_info.scissorCount  = 1;
         viewport_state_create_info.pScissors     = m_rhi->getSwapchainInfo().scissor;
 
+        // Pipeline Rasterization
         RHIPipelineRasterizationStateCreateInfo rasterization_state_create_info {};
         rasterization_state_create_info.sType            = RHI_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         rasterization_state_create_info.depthClampEnable = RHI_FALSE;
@@ -112,11 +122,13 @@ namespace Piccolo
         rasterization_state_create_info.depthBiasClamp          = 0.0f;
         rasterization_state_create_info.depthBiasSlopeFactor    = 0.0f;
 
+        // Pipeline multisample
         RHIPipelineMultisampleStateCreateInfo multisample_state_create_info {};
         multisample_state_create_info.sType                = RHI_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         multisample_state_create_info.sampleShadingEnable  = RHI_FALSE;
         multisample_state_create_info.rasterizationSamples = RHI_SAMPLE_COUNT_1_BIT;
 
+        // Pipeline ColorBlend
         RHIPipelineColorBlendAttachmentState color_blend_attachment_state {};
         color_blend_attachment_state.colorWriteMask      = RHI_COLOR_COMPONENT_R_BIT |
                                                            RHI_COLOR_COMPONENT_G_BIT |
@@ -141,6 +153,7 @@ namespace Piccolo
         color_blend_state_create_info.blendConstants[2] = 0.0f;
         color_blend_state_create_info.blendConstants[3] = 0.0f;
 
+        // Pipeline Depth Stencil State
         RHIPipelineDepthStencilStateCreateInfo depth_stencil_create_info {};
         depth_stencil_create_info.sType                 = RHI_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
         depth_stencil_create_info.depthTestEnable       = RHI_TRUE;
@@ -149,6 +162,7 @@ namespace Piccolo
         depth_stencil_create_info.depthBoundsTestEnable = RHI_FALSE;
         depth_stencil_create_info.stencilTestEnable     = RHI_FALSE;
 
+        // Pipeline DynamicState
         RHIDynamicState dynamic_states[] = {RHI_DYNAMIC_STATE_VIEWPORT, RHI_DYNAMIC_STATE_SCISSOR};
 
         RHIPipelineDynamicStateCreateInfo dynamic_state_create_info {};
@@ -156,6 +170,7 @@ namespace Piccolo
         dynamic_state_create_info.dynamicStateCount = 2;
         dynamic_state_create_info.pDynamicStates    = dynamic_states;
 
+        // Create Pipeline
         RHIGraphicsPipelineCreateInfo pipelineInfo {};
         pipelineInfo.sType               = RHI_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInfo.stageCount          = 2;
@@ -181,12 +196,14 @@ namespace Piccolo
         m_rhi->destroyShaderModule(vert_shader_module);
         m_rhi->destroyShaderModule(frag_shader_module);
     }
+
+
     void ToneMappingPass::setupDescriptorSet()
     {
         RHIDescriptorSetAllocateInfo post_process_global_descriptor_set_alloc_info;
-        post_process_global_descriptor_set_alloc_info.sType          = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        post_process_global_descriptor_set_alloc_info.pNext          = NULL;
-        post_process_global_descriptor_set_alloc_info.descriptorPool = m_rhi->getDescriptorPoor();
+        post_process_global_descriptor_set_alloc_info.sType              = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        post_process_global_descriptor_set_alloc_info.pNext              = NULL;
+        post_process_global_descriptor_set_alloc_info.descriptorPool     = m_rhi->getDescriptorPoor();
         post_process_global_descriptor_set_alloc_info.descriptorSetCount = 1;
         post_process_global_descriptor_set_alloc_info.pSetLayouts        = &m_descriptor_infos[0].layout;
 
@@ -197,6 +214,7 @@ namespace Piccolo
         }
     }
 
+    // 在创建一个新的frambuffer之后更新descriptorSet的内容
     void ToneMappingPass::updateAfterFramebufferRecreate(RHIImageView* input_attachment)
     {
         RHIDescriptorImageInfo post_process_per_frame_input_attachment_info = {};
@@ -212,7 +230,7 @@ namespace Piccolo
         post_process_descriptor_input_attachment_write_info.dstSet          = m_descriptor_infos[0].descriptor_set;
         post_process_descriptor_input_attachment_write_info.dstBinding      = 0;
         post_process_descriptor_input_attachment_write_info.dstArrayElement = 0;
-        post_process_descriptor_input_attachment_write_info.descriptorType  = RHI_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        post_process_descriptor_input_attachment_write_info.descriptorType  = RHI_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;   
         post_process_descriptor_input_attachment_write_info.descriptorCount = 1;
         post_process_descriptor_input_attachment_write_info.pImageInfo      = &post_process_per_frame_input_attachment_info;
 

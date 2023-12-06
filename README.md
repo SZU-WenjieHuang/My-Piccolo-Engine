@@ -953,4 +953,6 @@ Dynamic offset（动态偏移量）是在图形渲染中使用的一种技术，
 3-per_drawcall_vertex_blending_dynamic_offset（每个绘制调用顶点混合动态偏移量）：
 这个偏移量可能用于启用顶点混合的绘制调用中的顶点混合矩阵数据。顶点混合矩阵通常与每个绘制调用相关，因此可以使用动态偏移量在每次绘制调用之前更新相关的存储缓冲区。
 
+dynamic offset 可以参考这个内容: https://github.com/SaschaWillems/Vulkan/tree/master/examples/dynamicuniformbuffer
+
 ### 46 
