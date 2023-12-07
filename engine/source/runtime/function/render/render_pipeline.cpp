@@ -2,6 +2,7 @@
 #include "runtime/function/render/interface/vulkan/vulkan_rhi.h"
 
 #include "runtime/function/render/passes/color_grading_pass.h"
+#include "runtime/function/render/passes/vignette_pass.h"
 #include "runtime/function/render/passes/combine_ui_pass.h"
 #include "runtime/function/render/passes/directional_light_pass.h"
 #include "runtime/function/render/passes/main_camera_pass.h"
@@ -26,6 +27,7 @@ namespace Piccolo
         m_main_camera_pass        = std::make_shared<MainCameraPass>();
         m_tone_mapping_pass       = std::make_shared<ToneMappingPass>();
         m_color_grading_pass      = std::make_shared<ColorGradingPass>();
+        m_vignette_pass           = std::make_shared<VignettePass>();
         m_ui_pass                 = std::make_shared<UIPass>();
         m_combine_ui_pass         = std::make_shared<CombineUIPass>();
         m_pick_pass               = std::make_shared<PickPass>();
@@ -43,6 +45,7 @@ namespace Piccolo
         m_main_camera_pass->setCommonInfo(pass_common_info);
         m_tone_mapping_pass->setCommonInfo(pass_common_info);
         m_color_grading_pass->setCommonInfo(pass_common_info);
+        m_vignette_pass->setCommonInfo(pass_common_info);
         m_ui_pass->setCommonInfo(pass_common_info);
         m_combine_ui_pass->setCommonInfo(pass_common_info);
         m_pick_pass->setCommonInfo(pass_common_info);
@@ -101,6 +104,13 @@ namespace Piccolo
             _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_even];
         m_color_grading_pass->initialize(&color_grading_init_info);
 
+        // 初始化VignettePass
+        VignettePassInitInfo vignette_init_info;
+        vignette_init_info.render_pass = _main_camera_pass->getRenderPass();
+        vignette_init_info.input_attachment =
+            _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_even];
+        m_vignette_pass->initialize(&vignette_init_info);
+
         // 初始化UIPass
         UIPassInitInfo ui_init_info;
         ui_init_info.render_pass = _main_camera_pass->getRenderPass();
@@ -156,6 +166,7 @@ namespace Piccolo
         // get 返回的是subpass的指针, 通过static_cast 和解引用得到对象来初始化该subpass的引用
         // 这里需要使用static_cast还有点疑问
         ColorGradingPass& color_grading_pass = *(static_cast<ColorGradingPass*>(m_color_grading_pass.get()));
+        VignettePass&     vignette_pass      = *(static_cast<VignettePass*>(m_vignette_pass.get()));
         FXAAPass&         fxaa_pass          = *(static_cast<FXAAPass*>(m_fxaa_pass.get()));
         ToneMappingPass&  tone_mapping_pass  = *(static_cast<ToneMappingPass*>(m_tone_mapping_pass.get()));
         UIPass&           ui_pass            = *(static_cast<UIPass*>(m_ui_pass.get()));
@@ -168,6 +179,7 @@ namespace Piccolo
 
         static_cast<MainCameraPass*>(m_main_camera_pass.get())
             ->drawForward(color_grading_pass,
+                          vignette_pass,
                           fxaa_pass,
                           tone_mapping_pass,
                           ui_pass,
@@ -205,6 +217,7 @@ namespace Piccolo
         static_cast<PointLightShadowPass*>(m_point_light_shadow_pass.get())->draw();
 
         ColorGradingPass& color_grading_pass = *(static_cast<ColorGradingPass*>(m_color_grading_pass.get()));
+        VignettePass&     vignette_pass      = *(static_cast<VignettePass*>(m_vignette_pass.get()));
         FXAAPass&         fxaa_pass          = *(static_cast<FXAAPass*>(m_fxaa_pass.get()));
         ToneMappingPass&  tone_mapping_pass  = *(static_cast<ToneMappingPass*>(m_tone_mapping_pass.get()));
         UIPass&           ui_pass            = *(static_cast<UIPass*>(m_ui_pass.get()));
@@ -217,6 +230,7 @@ namespace Piccolo
 
         static_cast<MainCameraPass*>(m_main_camera_pass.get())
             ->draw(color_grading_pass,
+                   vignette_pass,
                    fxaa_pass,
                    tone_mapping_pass,
                    ui_pass,
@@ -238,6 +252,7 @@ namespace Piccolo
     {
         MainCameraPass&   main_camera_pass   = *(static_cast<MainCameraPass*>(m_main_camera_pass.get()));
         ColorGradingPass& color_grading_pass = *(static_cast<ColorGradingPass*>(m_color_grading_pass.get()));
+        VignettePass& vignette_pass          = *(static_cast<VignettePass*>(m_vignette_pass.get()));
         FXAAPass&         fxaa_pass          = *(static_cast<FXAAPass*>(m_fxaa_pass.get()));
         ToneMappingPass&  tone_mapping_pass  = *(static_cast<ToneMappingPass*>(m_tone_mapping_pass.get()));
         CombineUIPass&    combine_ui_pass    = *(static_cast<CombineUIPass*>(m_combine_ui_pass.get()));
@@ -245,13 +260,15 @@ namespace Piccolo
         ParticlePass&     particle_pass      = *(static_cast<ParticlePass*>(m_particle_pass.get()));
 
         // main_camera_pass 先更新
+        // odd 和 even 是subpass之间的一些缓冲区
         main_camera_pass.updateAfterFramebufferRecreate();
         tone_mapping_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd]);
         color_grading_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even]);
-        fxaa_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd]);
+        vignette_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd]);
+        fxaa_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even]);
         combine_ui_pass.updateAfterFramebufferRecreate(
-            main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd],
-            main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even]);
+            main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even],
+            main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd]);
         pick_pass.recreateFramebuffer();
         particle_pass.updateAfterFramebufferRecreate();
         g_runtime_global_context.m_debugdraw_manager->updateAfterRecreateSwapchain();

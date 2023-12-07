@@ -3,6 +3,7 @@
 #include "runtime/function/render/render_pass.h"
 
 #include "runtime/function/render/passes/color_grading_pass.h"
+#include "runtime/function/render/passes/vignette_pass.h"
 #include "runtime/function/render/passes/combine_ui_pass.h"
 #include "runtime/function/render/passes/fxaa_pass.h"
 #include "runtime/function/render/passes/tone_mapping_pass.h"
@@ -65,6 +66,7 @@ namespace Piccolo
 
         // draw(在这里是deffered rendering)需要传入各个subpass和swapchain_image_index
         void draw(ColorGradingPass& color_grading_pass,
+            VignettePass& vignette_pass,
             FXAAPass& fxaa_pass,
             ToneMappingPass& tone_mapping_pass,
             UIPass& ui_pass,
@@ -74,6 +76,7 @@ namespace Piccolo
 
         // drawForward也是需要传入 subpass和swapchain_image_index
         void drawForward(ColorGradingPass& color_grading_pass,
+            VignettePass& vignette_pass,
             FXAAPass& fxaa_pass,
             ToneMappingPass& tone_mapping_pass,
             UIPass& ui_pass,

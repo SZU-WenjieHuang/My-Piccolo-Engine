@@ -1,20 +1,20 @@
-#include "runtime/function/render/passes/color_grading_pass.h"
+#include "runtime/function/render/passes/vignette_pass.h"
 
 #include "runtime/function/render/interface/vulkan/vulkan_rhi.h"
 #include "runtime/function/render/interface/vulkan/vulkan_util.h"
 
-#include <color_grading_frag.h>
+#include <vignette_frag.h>
 #include <post_process_vert.h>
 
 #include <stdexcept>
 
 namespace Piccolo
 {
-    void ColorGradingPass::initialize(const RenderPassInitInfo* init_info)
+    void VignettePass::initialize(const RenderPassInitInfo* init_info)
     {
         RenderPass::initialize(nullptr);
 
-        const ColorGradingPassInitInfo* _init_info = static_cast<const ColorGradingPassInitInfo*>(init_info);
+        const VignettePassInitInfo* _init_info = static_cast<const VignettePassInitInfo*>(init_info);
         m_framebuffer.render_pass                  = _init_info->render_pass;
 
         setupDescriptorSetLayout();
@@ -23,7 +23,7 @@ namespace Piccolo
         updateAfterFramebufferRecreate(_init_info->input_attachment);
     }
 
-    void ColorGradingPass::setupDescriptorSetLayout()
+    void VignettePass::setupDescriptorSetLayout()
     {
         m_descriptor_infos.resize(1);
 
@@ -56,7 +56,7 @@ namespace Piccolo
         }
     }
 
-    void ColorGradingPass::setupPipelines()
+    void VignettePass::setupPipelines()
     {
         m_render_pipelines.resize(1);
 
@@ -72,7 +72,7 @@ namespace Piccolo
         }
 
         RHIShader* vert_shader_module = m_rhi->createShaderModule(POST_PROCESS_VERT);
-        RHIShader* frag_shader_module = m_rhi->createShaderModule(COLOR_GRADING_FRAG);
+        RHIShader* frag_shader_module = m_rhi->createShaderModule(VIGNETTE_FRAG);
 
         RHIPipelineShaderStageCreateInfo vert_pipeline_shader_stage_create_info {};
         vert_pipeline_shader_stage_create_info.sType  = RHI_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -176,7 +176,7 @@ namespace Piccolo
         pipelineInfo.pDepthStencilState  = &depth_stencil_create_info;
         pipelineInfo.layout              = m_render_pipelines[0].layout;
         pipelineInfo.renderPass          = m_framebuffer.render_pass;
-        pipelineInfo.subpass             = _main_camera_subpass_color_grading;
+        pipelineInfo.subpass             = _main_camera_subpass_vignette;
         pipelineInfo.basePipelineHandle  = RHI_NULL_HANDLE;
         pipelineInfo.pDynamicState       = &dynamic_state_create_info;
 
@@ -189,7 +189,7 @@ namespace Piccolo
         m_rhi->destroyShaderModule(frag_shader_module);
     }
 
-    void ColorGradingPass::setupDescriptorSet()
+    void VignettePass::setupDescriptorSet()
     {
         RHIDescriptorSetAllocateInfo post_process_global_descriptor_set_alloc_info;
         post_process_global_descriptor_set_alloc_info.sType          = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -204,7 +204,7 @@ namespace Piccolo
         }
     }
 
-    void ColorGradingPass::updateAfterFramebufferRecreate(RHIImageView* input_attachment)
+    void VignettePass::updateAfterFramebufferRecreate(RHIImageView* input_attachment)
     {
         RHIDescriptorImageInfo post_process_per_frame_input_attachment_info = {};
         post_process_per_frame_input_attachment_info.sampler =
@@ -212,10 +212,11 @@ namespace Piccolo
         post_process_per_frame_input_attachment_info.imageView   = input_attachment;
         post_process_per_frame_input_attachment_info.imageLayout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-        RHIDescriptorImageInfo color_grading_LUT_image_info = {};
-        color_grading_LUT_image_info.sampler = m_rhi->getOrCreateDefaultSampler(Default_Sampler_Linear);
-        color_grading_LUT_image_info.imageView = m_global_render_resource->_color_grading_resource._color_grading_LUT_texture_image_view;
-        color_grading_LUT_image_info.imageLayout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        RHIDescriptorImageInfo vignette_LUT_image_info = {};
+        vignette_LUT_image_info.sampler = m_rhi->getOrCreateDefaultSampler(Default_Sampler_Linear);
+        vignette_LUT_image_info.imageView =
+            m_global_render_resource->_color_grading_resource._color_grading_LUT_texture_image_view;
+        vignette_LUT_image_info.imageLayout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         RHIWriteDescriptorSet post_process_descriptor_writes_info[2];
 
@@ -238,7 +239,7 @@ namespace Piccolo
         post_process_descriptor_LUT_write_info.dstArrayElement       = 0;
         post_process_descriptor_LUT_write_info.descriptorType        = RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         post_process_descriptor_LUT_write_info.descriptorCount       = 1;
-        post_process_descriptor_LUT_write_info.pImageInfo            = &color_grading_LUT_image_info;
+        post_process_descriptor_LUT_write_info.pImageInfo            = &vignette_LUT_image_info;
 
         m_rhi->updateDescriptorSets(sizeof(post_process_descriptor_writes_info) /
                                     sizeof(post_process_descriptor_writes_info[0]),
@@ -247,10 +248,10 @@ namespace Piccolo
                                     NULL);
     }
 
-    void ColorGradingPass::draw()
+    void VignettePass::draw()
     {
         float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-        m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Color Grading", color);
+        m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Vignette", color);
 
         m_rhi->cmdBindPipelinePFN(m_rhi->getCurrentCommandBuffer(), RHI_PIPELINE_BIND_POINT_GRAPHICS, m_render_pipelines[0].pipeline);
         m_rhi->cmdSetViewportPFN(m_rhi->getCurrentCommandBuffer(), 0, 1, m_rhi->getSwapchainInfo().viewport);
