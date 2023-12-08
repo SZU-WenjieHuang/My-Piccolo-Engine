@@ -1034,3 +1034,44 @@ enum
 5-这样就可以高效重复利用这两个attachment,不用为每个pass单独分配资源,大幅节省内存。
 
 6-等于实现了一个仅有两个"内存块"的内存池,任何pass都可以从中取用资源,然后归还给池子使用。
+
+### 47 descriptor 和 pipeline的一对多关系
+
+一个PipilineLayout，可以有三个 DescriptorSetLayout作为Parent； 同时一个Pipeline也可以绑定多个DescriptorSet； 
+
+如果一个PipelineLayout有3个DescriptorSetLayout作为parent,那么这个PipelineLayout在绑定Pipeine时,就要求绑定3个DescriptorSet。
+
+具体来说:
+
+PipelineLayout通过其pDescriptorSetLayouts数组指定了支持的DescriptorSetLayout类型。
+
+每个Layout定义了一个DescriptorSet的结构(binding布局)。
+
+那么PipelineLayout总的DescriptorSet数量,就是pDescriptorSetLayouts数组的长度。
+
+在绑定Pipeline时,需要按照数组顺序绑定DescriptorSet,数量必须与Layouts数目一致。
+
+### 48 多个Descriptor Set在Shader里怎么被使用
+
+```cpp
+
+layout(set = 0, binding = 1) readonly buffer _unused_name_per_drawcall
+{
+    VulkanMeshInstance mesh_instances[m_mesh_per_drawcall_max_instance_count];
+};
+
+layout(set = 0, binding = 2) readonly buffer _unused_name_per_drawcall_vertex_blending
+{
+    highp mat4 joint_matrices[m_mesh_vertex_blending_max_joint_count * m_mesh_per_drawcall_max_instance_count];
+};
+layout(set = 1, binding = 0) readonly buffer _unused_name_per_mesh_joint_binding
+{
+    VulkanMeshVertexJointBinding indices_and_weights[];
+};
+
+```
+
+比如这样，用Set = 0， Set = 1， 这样来定位资源的位置。
+
+### 49 To be Continue...
+Piccolo小引擎自我阅读部分的理解到此结束了，期待有更多的时间和效率区阅读小引擎的其他部分，未完待续，博大精深！
