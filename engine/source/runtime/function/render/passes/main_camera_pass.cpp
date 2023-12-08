@@ -390,18 +390,18 @@ namespace Piccolo
 
         // vignette_pass 的input attachment
         RHIAttachmentReference vignette_pass_input_attachment_reference {};
-        vignette_pass_input_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
+        vignette_pass_input_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
         vignette_pass_input_attachment_reference.layout     = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         // vignette_pass 的color attachment
         RHIAttachmentReference vignette_pass_color_attachment_reference {};
         if (m_enable_fxaa)
         {
-            vignette_pass_color_attachment_reference.attachment = &post_process_odd_color_attachment_description - attachments;
+            vignette_pass_color_attachment_reference.attachment = &post_process_even_color_attachment_description - attachments;
         }
         else
         {
-            vignette_pass_color_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
+            vignette_pass_color_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
         }
         vignette_pass_color_attachment_reference.layout = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
@@ -446,10 +446,10 @@ namespace Piccolo
 
         // ui Pass的color attachment
         RHIAttachmentReference ui_pass_color_attachment_reference {};
-        ui_pass_color_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
+        ui_pass_color_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
         ui_pass_color_attachment_reference.layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-        uint32_t ui_pass_preserve_attachment = &backup_odd_color_attachment_description - attachments;
+        uint32_t ui_pass_preserve_attachment = &backup_even_color_attachment_description - attachments;
 
         // UI Pass的subpass
         RHISubpassDescription& ui_pass  = subpasses[_main_camera_subpass_ui];
@@ -464,9 +464,9 @@ namespace Piccolo
 
         // combine UI Pass的input reference(有两个 UI + 原始的画面)
         RHIAttachmentReference combine_ui_pass_input_attachments_reference[2] = {};
-        combine_ui_pass_input_attachments_reference[0].attachment = &backup_odd_color_attachment_description - attachments;
+        combine_ui_pass_input_attachments_reference[0].attachment = &backup_even_color_attachment_description - attachments;
         combine_ui_pass_input_attachments_reference[0].layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        combine_ui_pass_input_attachments_reference[1].attachment = &backup_even_color_attachment_description - attachments;
+        combine_ui_pass_input_attachments_reference[1].attachment = &backup_odd_color_attachment_description - attachments;
         combine_ui_pass_input_attachments_reference[1].layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         // combine UI Pass的 color attachment

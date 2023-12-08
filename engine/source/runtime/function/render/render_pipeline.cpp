@@ -108,7 +108,7 @@ namespace Piccolo
         VignettePassInitInfo vignette_init_info;
         vignette_init_info.render_pass = _main_camera_pass->getRenderPass();
         vignette_init_info.input_attachment =
-            _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_even];
+            _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd];
         m_vignette_pass->initialize(&vignette_init_info);
 
         // 初始化UIPass
@@ -120,9 +120,9 @@ namespace Piccolo
         CombineUIPassInitInfo combine_ui_init_info;
         combine_ui_init_info.render_pass = _main_camera_pass->getRenderPass();
         combine_ui_init_info.scene_input_attachment =
-            _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd];
-        combine_ui_init_info.ui_input_attachment =
             _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_even];
+        combine_ui_init_info.ui_input_attachment =
+            _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd];
         m_combine_ui_pass->initialize(&combine_ui_init_info);
 
         // 初始化PickPass
@@ -134,7 +134,7 @@ namespace Piccolo
         FXAAPassInitInfo fxaa_init_info;
         fxaa_init_info.render_pass = _main_camera_pass->getRenderPass();
         fxaa_init_info.input_attachment =
-            _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd];
+            _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even];
         m_fxaa_pass->initialize(&fxaa_init_info);
 
     }
