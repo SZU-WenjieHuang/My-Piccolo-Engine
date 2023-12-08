@@ -955,4 +955,82 @@ Dynamic offset（动态偏移量）是在图形渲染中使用的一种技术，
 
 dynamic offset 可以参考这个内容: https://github.com/SaschaWillems/Vulkan/tree/master/examples/dynamicuniformbuffer
 
-### 46 
+### 46 Odd 和 Even的attachment设计
+
+我们在attachments的枚举里可以看到 odd 和 even的设计
+```cpp
+enum
+{
+    // attachments
+    _main_camera_pass_gbuffer_a                     = 0,
+    _main_camera_pass_gbuffer_b                     = 1,
+    _main_camera_pass_gbuffer_c                     = 2,
+    _main_camera_pass_backup_buffer_odd             = 3,
+    _main_camera_pass_backup_buffer_even            = 4,
+    _main_camera_pass_post_process_buffer_odd       = 5,
+    _main_camera_pass_post_process_buffer_even      = 6,
+    _main_camera_pass_depth                         = 7,
+    _main_camera_pass_swap_chain_image              = 8,
+    // attachment count
+    _main_camera_pass_custom_attachment_count       = 5,
+    _main_camera_pass_post_process_attachment_count = 2,
+    _main_camera_pass_attachment_count              = 9,
+};
+```
+
+此处使用odd和even两个attachment,是为了实现不同阶段的渲染 pass 之间的交替读取和写入。
+
+原因是:
+
+1-Vulkan渲染管线中的每个Render Pass,一次只能读取或写入其中的attachment,但不能同时读写。
+
+2-所以不同pass之间要实现输入输出关系,需要使用两个attachment交替进行。
+
+所以，每个渲染pass的input attachment和write attachment(color attachment)是相互交换的。如下: 可以看到tone_mapping 和 color_grading 这两个相邻的pass，他们的input_attachment
+和 color_attachment(write_attachment 是相互切换的)
+
+```cpp
+        // tone_mapping_pass 的 input_attachment
+        RHIAttachmentReference tone_mapping_pass_input_attachment_reference {};
+        tone_mapping_pass_input_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
+        tone_mapping_pass_input_attachment_reference.layout     = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        // tone_mapping_pass 的 color_attachment
+        RHIAttachmentReference tone_mapping_pass_color_attachment_reference {};
+        tone_mapping_pass_color_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
+        tone_mapping_pass_color_attachment_reference.layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        // ... ...
+
+        // color_grading_pass 的input attachment
+        RHIAttachmentReference color_grading_pass_input_attachment_reference {};
+        color_grading_pass_input_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
+        color_grading_pass_input_attachment_reference.layout     = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        // color_grading_pass 的color attachment
+        RHIAttachmentReference color_grading_pass_color_attachment_reference {};
+        if (m_enable_fxaa)
+        {
+            color_grading_pass_color_attachment_reference.attachment = &post_process_odd_color_attachment_description - attachments;
+        }
+        else
+        {
+            color_grading_pass_color_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
+        }
+        color_grading_pass_color_attachment_reference.layout = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+```
+使用odd even两个attachment交替写入的好处就是可以节约Image(Buffer)资源,重复利用内存,实现类似内存池的效果。
+
+具体原因如下:
+
+1-每个Image(Buffer)在GPU内存中都需要分配一定的空间。
+
+2-如果每个pass都单独分配input和output的attachment,随着pass增多会消耗很多GPU内存。
+
+3-但实际上任意两个pass之间,一个pass的output就是下一个pass的input。
+
+4-使用odd even机制,只需要两个attachment就可以支持任意数量的pass交替传递数据。
+
+5-这样就可以高效重复利用这两个attachment,不用为每个pass单独分配资源,大幅节省内存。
+
+6-等于实现了一个仅有两个"内存块"的内存池,任何pass都可以从中取用资源,然后归还给池子使用。
